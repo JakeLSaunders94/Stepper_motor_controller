@@ -263,6 +263,9 @@ class StepperMotor(Motor):
         if not isinstance(steps, int):
             raise CommandError(f"{steps} is not a valid number of steps.")
 
+        if not self._controller:
+            self._init_controller_class()
+
         logging.info(
             f"Moving stepper {self.name} {steps} x {self.steptype} steps "
             f"in the {self.direction_of_rotation} direction."
@@ -280,6 +283,9 @@ class StepperMotor(Motor):
         """Move a given number of rotations or points of a rotation."""
         if not isinstance(rotations, int) and not isinstance(rotations, float):
             raise CommandError(f"{rotations} is not a valid number of rotations.")
+
+        if not self._controller:
+            self._init_controller_class()
 
         steps = rotations * self.steps_per_revolution
 
@@ -302,6 +308,9 @@ class StepperMotor(Motor):
             raise CommandError(f"{mm} is not a valid millimeter measurement.")
         if not self.mm_per_revolution:
             raise ConfigurationError("You have not designated a mm/rev for this motor.")
+
+        if not self._controller:
+            self._init_controller_class()
 
         rotations = mm / self.mm_per_revolution
         steps = rotations * self.steps_per_revolution
