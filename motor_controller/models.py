@@ -1,5 +1,8 @@
 # Django
+import logging
+
 import django.apps
+from RpiMotorLib.RpiMotorLib import A4988Nema
 from django.db import models
 from django.apps import apps
 from django.core.exceptions import ValidationError
@@ -8,7 +11,7 @@ from django.core.exceptions import ValidationError
 from .constants import AVAILABLE_RPI_GPIO_PINS
 from .constants import GPIO_PIN_USING_MODELS
 from .constants import STEPPER_DRIVER_TYPES
-from .exceptions import ImplementationError
+from .exceptions import ImplementationError, ConfigurationError, CommandError
 
 
 class Motor(models.Model):
@@ -70,6 +73,8 @@ class StepperMotor(Motor):
         self._step_delay = 0.01
         self._verbose = False  # not sure what this is yet.
         self._init_delay = 0.001
+        if self.driver_type:
+            self.controller_class = self.get_controller_class()
         super().__init__(*args, **kwargs)
 
     driver_type = models.CharField(
@@ -91,6 +96,7 @@ class StepperMotor(Motor):
         choices=AVAILABLE_RPI_GPIO_PINS, blank=True, null=True
     )
     steps_per_revolution = models.IntegerField(default=200)
+    mm_per_revolution = models.FloatField(null=True, blank=True)
 
     @property
     def gpio_pin_fields(self):
@@ -125,6 +131,49 @@ class StepperMotor(Motor):
                             "MS3_GPIO_pin": "All three of these must be set or none.",
                         }
                     )
+
+    def get_controller_class(self):
+        """Get the controller class for this motor."""
+        if not self.driver_type:
+            return ConfigurationError(
+                "This class does not have a driver set yet. Save the model first."
+            )
+
+        for driver in STEPPER_DRIVER_TYPES:
+            if self.driver_type == driver[0]:
+                try:
+                    return driver[1]
+                except IndexError:
+                    raise ImplementationError("Driver class not set for driver.")
+
+    def _init_controller_class(self):
+        """Initialize an instance of this motors controller class."""
+        if not self.controller_class:
+            self.get_controller_class()
+
+        if self.controller_class == A4988Nema:
+            if self.MS1_GPIO_pin and self.MS2_GPIO_pin and self.MS3_GPIO_pin:
+                mode_pins = (self.MS1_GPIO_pin, self.MS2_GPIO_pin, self.MS3_GPIO_pin)
+            else:
+                mode_pins = (-1, -1, -1)
+
+            self._controller = A4988Nema(
+                direction_pin=self.direction_GPIO_pin,
+                mode_pins=mode_pins,
+                step_pin=self.step_GPIO_pin,
+            )
+
+    @property
+    def steps_per_rev(self):
+        """
+        Return the current number of steps required to do a full rev.
+
+        Take into account the current steptype.
+        """
+        multipliers = [["Full", 1], ["Half", 2], ["1/4", 4], ["1/8", 8], ["1/16", 16]]
+        for opts in multipliers:
+            if self.steptype == opts[0]:
+                return self.steps_per_revolution * opts[1]
 
     # Getters for modal settings
     @property
@@ -209,3 +258,57 @@ class StepperMotor(Motor):
         self._init_delay = float(delay)
 
     # Movement commands
+    def move_steps(self, steps: int):
+        """Move a given number of steps in the set direction."""
+        if not isinstance(steps, int):
+            raise CommandError(f"{steps} is not a valid number of steps.")
+
+        logging.info(
+            f"Moving stepper {self.name} {steps} x {self.steptype} steps "
+            f"in the {self.direction_of_rotation} direction."
+        )
+        self._controller.motor_go(
+            self.direction_of_rotation,
+            self.steptype,
+            steps,
+            self.step_delay,
+            self._verbose,
+            self.init_delay,
+        )
+
+    def move_rotations(self, rotations: [float, int]):
+        """Move a given number of rotations or points of a rotation."""
+        if not isinstance(rotations, int) and not isinstance(rotations, float):
+            raise CommandError(f"{rotations} is not a valid number of rotations.")
+
+        steps = rotations * self.steps_per_revolution
+
+        logging.info(
+            f"Moving stepper {self.name} {rotations} x rotations ({steps} steps) "
+            f"in the {self.direction_of_rotation} direction."
+        )
+        self._controller.motor_go(
+            self.direction_of_rotation,
+            self.steptype,
+            steps,
+            self.step_delay,
+            self._verbose,
+            self.init_delay,
+        )
+
+    def move_mm(self, mm: [float, int]):
+        """Move the motor a given number or fraction of a mm."""
+        if not isinstance(mm, int) and not isinstance(mm, float):
+            raise CommandError(f"{mm} is not a valid millimeter measurement.")
+        if not self.mm_per_revolution:
+            raise ConfigurationError("You have not designated a mm/rev for this motor.")
+
+        rotations = mm / self.mm_per_revolution
+        steps = rotations * self.steps_per_revolution
+
+        logging.info(
+            f"Moving stepper {self.name} {mm}mm ({steps} steps) "
+            f"in the {self.direction_of_rotation} direction."
+        )
+
+        self.move_rotations(rotations)
