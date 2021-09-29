@@ -138,11 +138,7 @@ class StepperMotor(Motor):
                         {field: "This field is required for this driver type."},
                     )
             if self.MS1_GPIO_pin or self.MS2_GPIO_pin or self.MS3_GPIO_pin:
-                if (
-                    not self.MS1_GPIO_pin
-                    or not self.MS2_GPIO_pin
-                    or not self.MS3_GPIO_pin
-                ):
+                if not self.MS1_GPIO_pin or not self.MS2_GPIO_pin or not self.MS3_GPIO_pin:
                     raise ValidationError(
                         {
                             "MS1_GPIO_pin": "All three of these must be set or none.",
@@ -242,8 +238,7 @@ class StepperMotor(Motor):
         if direction == "anti-clockwise":
             self._direction_of_rotation = True
         raise ValueError(
-            "That is not a valid option, please choose 'clockwise' "
-            "or 'anti-clockwise'.",
+            "That is not a valid option, please choose 'clockwise' " "or 'anti-clockwise'.",
         )
 
     @steptype.setter
