@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            pytest --cov
+            pytest --cov --ds=test_settings.settings
       - run:
           name: Black
           command: |
