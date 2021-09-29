@@ -1,9 +1,13 @@
-from RpiMotorLib.RpiMotorLib import *
+# -*- coding: utf-8 -*-
+"""Constants for motor controller."""
+
+# 3rd-party
+from RpiMotorLib.RpiMotorLib import A4988Nema
 
 STEPPER_DRIVER_TYPES = [
     # [stepper_type_name, rpimsotorlib_driver_class]
     # Add to this as support comes online.
-    ['A4988', A4988Nema]
+    ["A4988", A4988Nema],
 ]
 
 AVAILABLE_RPI_GPIO_PINS = [
@@ -39,6 +43,4 @@ AVAILABLE_RPI_GPIO_PINS = [
 
 # These are all the models that use GPIO pins.
 # Used to check each pin is only used once.
-GPIO_PIN_USING_MODELS = [
-    'motor_controller.StepperMotor'
-]
+GPIO_PIN_USING_MODELS = ["motor_controller.StepperMotor"]

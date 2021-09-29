@@ -1,17 +1,24 @@
-# Django
+# -*- coding: utf-8 -*-
+"""Models for motor control."""
+
+# Standard Library
 import logging
 
-import django.apps
-from RpiMotorLib.RpiMotorLib import A4988Nema
-from django.db import models
+# Django
 from django.apps import apps
 from django.core.exceptions import ValidationError
+from django.db import models
+
+# 3rd-party
+from RpiMotorLib.RpiMotorLib import A4988Nema
 
 # Local
 from .constants import AVAILABLE_RPI_GPIO_PINS
 from .constants import GPIO_PIN_USING_MODELS
 from .constants import STEPPER_DRIVER_TYPES
-from .exceptions import ImplementationError, ConfigurationError, CommandError
+from .exceptions import CommandError
+from .exceptions import ConfigurationError
+from .exceptions import ImplementationError
 
 
 class Motor(models.Model):
@@ -32,8 +39,7 @@ class Motor(models.Model):
         raise NotImplementedError("This needs to be set by the concrete subclass.")
 
     def clean(self):
-        """Generic model clean functions for all Motor objects."""
-
+        """Generic model clean functions for all Motor objects."""  # noqa: D401
         # Check for already assigned GPIO pins across all applicable models.
         for pin_field in self.gpio_pin_fields:
             this_model_val = getattr(self, pin_field)
@@ -46,29 +52,29 @@ class Motor(models.Model):
                 except IndexError:
                     raise ImplementationError(
                         f"The format for defining models is '<app_name>.<model_name>'"
-                        f", you defined {modelstr}."
+                        f", you defined {modelstr}.",
                     )
 
                 spec_model = apps.get_model(app_label=app, model_name=model)
                 for spec_field in spec_model.gpio_pin_fields:
-                    filter = {spec_field: this_model_val}
-                    pin_used = spec_model.objects.filter(**filter).count() > 0
+                    filters = {spec_field: this_model_val}
+                    pin_used = spec_model.objects.filter(**filters).count() > 0
                     if not pin_used:
                         continue
                     else:
                         raise ValidationError(
                             {
                                 pin_field: f"This GPIO pin is already in use on "
-                                           f"{spec_model}: {spec_field}, please select "
-                                           f"another."
-                            }
+                                f"{spec_model}: {spec_field}, please select "
+                                f"another.",
+                            },
                         )
 
 
 class StepperMotor(Motor):
     """Stepper motor object, with control API functionality built-in."""
 
-    def __init__(self, *args, **kwargs):  # noqa: D102
+    def __init__(self, *args, **kwargs):  # noqa: D107
         self._direction_of_rotation = True
         self._steptype = "Full"
         self._step_delay = 0.01
@@ -81,28 +87,39 @@ class StepperMotor(Motor):
     driver_type = models.CharField(
         verbose_name="Motor Driver type",
         choices=[(x[0], x[0]) for x in STEPPER_DRIVER_TYPES],
-        max_length=250
+        max_length=250,
     )
     direction_GPIO_pin = models.IntegerField(
-        choices=AVAILABLE_RPI_GPIO_PINS, blank=True, null=True
+        choices=AVAILABLE_RPI_GPIO_PINS,
+        blank=True,
+        null=True,
     )
     step_GPIO_pin = models.IntegerField(
-        choices=AVAILABLE_RPI_GPIO_PINS, blank=True, null=True
+        choices=AVAILABLE_RPI_GPIO_PINS,
+        blank=True,
+        null=True,
     )
     MS1_GPIO_pin = models.IntegerField(
-        choices=AVAILABLE_RPI_GPIO_PINS, blank=True, null=True
+        choices=AVAILABLE_RPI_GPIO_PINS,
+        blank=True,
+        null=True,
     )
     MS2_GPIO_pin = models.IntegerField(
-        choices=AVAILABLE_RPI_GPIO_PINS, blank=True, null=True
+        choices=AVAILABLE_RPI_GPIO_PINS,
+        blank=True,
+        null=True,
     )
     MS3_GPIO_pin = models.IntegerField(
-        choices=AVAILABLE_RPI_GPIO_PINS, blank=True, null=True
+        choices=AVAILABLE_RPI_GPIO_PINS,
+        blank=True,
+        null=True,
     )
     steps_per_revolution = models.IntegerField(default=200)
     mm_per_revolution = models.FloatField(null=True, blank=True)
 
     @property
     def gpio_pin_fields(self):
+        """All fields housing GPIO pin config in this model."""
         return [
             "direction_GPIO_pin",
             "step_GPIO_pin",
@@ -112,34 +129,33 @@ class StepperMotor(Motor):
         ]
 
     def clean(self):
-        """Custom model validation for steppers."""
-
+        """Custom model validation for steppers."""  # noqa: D401
         # Validate that the correct fields are full for driver type
         if self.driver_type == "A4988":
             for field in ["direction_GPIO_pin", "step_GPIO_pin"]:
                 if not getattr(self, field):
                     raise ValidationError(
-                        {field: "This field is required for this driver type."}
+                        {field: "This field is required for this driver type."},
                     )
             if self.MS1_GPIO_pin or self.MS2_GPIO_pin or self.MS3_GPIO_pin:
                 if (
-                        not self.MS1_GPIO_pin
-                        or not self.MS2_GPIO_pin
-                        or not self.MS3_GPIO_pin
+                    not self.MS1_GPIO_pin
+                    or not self.MS2_GPIO_pin
+                    or not self.MS3_GPIO_pin
                 ):
                     raise ValidationError(
                         {
                             "MS1_GPIO_pin": "All three of these must be set or none.",
                             "MS2_GPIO_pin": "All three of these must be set or none.",
                             "MS3_GPIO_pin": "All three of these must be set or none.",
-                        }
+                        },
                     )
 
     def get_controller_class(self):
         """Get the controller class for this motor."""
         if not self.driver_type:
             return ConfigurationError(
-                "This class does not have a driver set yet. Save the model first."
+                "This class does not have a driver set yet. Save the model first.",
             )
 
         for driver in STEPPER_DRIVER_TYPES:
@@ -227,7 +243,7 @@ class StepperMotor(Motor):
             self._direction_of_rotation = True
         raise ValueError(
             "That is not a valid option, please choose 'clockwise' "
-            "or 'anti-clockwise'."
+            "or 'anti-clockwise'.",
         )
 
     @steptype.setter
@@ -236,13 +252,13 @@ class StepperMotor(Motor):
         if not self.MS1_GPIO_pin or not self.MS2_GPIO_pin or not self.MS3_GPIO_pin:
             raise ValueError(
                 "MSX pins are not configured for this motor, "
-                "therefore only full steps are allowed."
+                "therefore only full steps are allowed.",
             )
         valid_steptypes = ["Full", "Half", "1/4", "1/8", "1/16"]
 
         if steptype not in valid_steptypes:
             raise ValueError(
-                f"That is not a valid step type. Options are {valid_steptypes}"
+                f"That is not a valid step type. Options are {valid_steptypes}",
             )
         self._steptype = steptype
 
@@ -271,7 +287,7 @@ class StepperMotor(Motor):
 
         logging.info(
             f"Moving stepper {self.name} {steps} x {self.steptype} steps "
-            f"in the {self.direction_of_rotation} direction."
+            f"in the {self.direction_of_rotation} direction.",
         )
         self._controller.motor_go(
             self.direction_of_rotation,
@@ -294,7 +310,7 @@ class StepperMotor(Motor):
 
         logging.info(
             f"Moving stepper {self.name} {rotations} x rotations ({steps} steps) "
-            f"in the {self.direction_of_rotation} direction."
+            f"in the {self.direction_of_rotation} direction.",
         )
         self._controller.motor_go(
             self.direction_of_rotation,
@@ -320,7 +336,7 @@ class StepperMotor(Motor):
 
         logging.info(
             f"Moving stepper {self.name} {mm}mm ({steps} steps) "
-            f"in the {self.direction_of_rotation} direction."
+            f"in the {self.direction_of_rotation} direction.",
         )
 
         self.move_rotations(rotations)
