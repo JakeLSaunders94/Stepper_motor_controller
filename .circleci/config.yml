@@ -1,0 +1,33 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@1.2
+  codecov: codecov/codecov@3.0.0
+
+workflows:
+  sample:
+    jobs:
+      - build-and-test
+
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/python:3.8
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Run tests
+          command: |
+            pytest --cov
+      - run:
+          name: Black
+          command: |
+            black -l 100 --check motor_controller test_settings
+      - run:
+          name: Flake8
+          command: |
+            flake8 motor_controller test_settings
+      - codecov/upload
