@@ -51,15 +51,16 @@ class Motor(models.Model):
 
                 spec_model = apps.get_model(app_label=app, model_name=model)
                 for spec_field in spec_model.gpio_pin_fields:
-                    spec_val = getattr(spec_model, spec_field)
-                    if not spec_val:
+                    filter = {spec_field: this_model_val}
+                    pin_used = spec_model.objects.filter(**filter).count() > 0
+                    if not pin_used:
                         continue
-                    if spec_val == this_model_val:
+                    else:
                         raise ValidationError(
                             {
                                 pin_field: f"This GPIO pin is already in use on "
-                                f"{spec_model}: {spec_field}, please select "
-                                f"another."
+                                           f"{spec_model}: {spec_field}, please select "
+                                           f"another."
                             }
                         )
 
@@ -78,7 +79,9 @@ class StepperMotor(Motor):
         super().__init__(*args, **kwargs)
 
     driver_type = models.CharField(
-        verbose_name="Motor Driver type", choices=[x[0] for x in STEPPER_DRIVER_TYPES]
+        verbose_name="Motor Driver type",
+        choices=[(x[0], x[0]) for x in STEPPER_DRIVER_TYPES],
+        max_length=250
     )
     direction_GPIO_pin = models.IntegerField(
         choices=AVAILABLE_RPI_GPIO_PINS, blank=True, null=True
@@ -120,9 +123,9 @@ class StepperMotor(Motor):
                     )
             if self.MS1_GPIO_pin or self.MS2_GPIO_pin or self.MS3_GPIO_pin:
                 if (
-                    not self.MS1_GPIO_pin
-                    or not self.MS2_GPIO_pin
-                    or not self.MS3_GPIO_pin
+                        not self.MS1_GPIO_pin
+                        or not self.MS2_GPIO_pin
+                        or not self.MS3_GPIO_pin
                 ):
                     raise ValidationError(
                         {
