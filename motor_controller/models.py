@@ -5,8 +5,6 @@
 import logging
 
 # Django
-from math import ceil
-
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -345,18 +343,15 @@ class StepperMotor(Motor):
         if not self.mm_per_revolution:
             raise ConfigurationError("You have not designated a mm/rev for this motor.")
 
-        if not self._controller:
-            self._init_controller_class()
-
         rotations = mm / self.mm_per_revolution
-        steps = rotations * self.steps_per_revolution
+        steps = round(rotations * self.steps_per_revolution)
 
         logging.info(
             f"Moving stepper {self.name} {mm}mm ({steps} steps) "
             f"in the {self.direction_of_rotation} direction.",
         )
 
-        self.move_rotations(rotations)
+        self.move_steps(steps, log=False)
 
     def save(self, **kwargs):
         """Call clean on save, even from backend."""

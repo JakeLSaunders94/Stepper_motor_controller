@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 # Project
+import motor_controller.models
 from motor_controller.constants import AVAILABLE_RPI_GPIO_PINS
 from motor_controller.constants import STEPPER_DRIVER_TYPES
 from motor_controller.exceptions import CommandError
@@ -464,7 +465,7 @@ class TestStepperMotor(TestCase):
             [1, 1, "Full", 1],
             [1, 10, "Half", 20],
             [100, 1, "1/4", 400],
-            [534, 0.5432, "Full", 290]
+            [534, 0.5432, "Full", 290],
         ]
         for test in tests:
             self.basic_motor.steps_per_revolution = test[0]
@@ -472,3 +473,68 @@ class TestStepperMotor(TestCase):
             self.basic_motor.move_rotations(test[1])
             mock_steps.assert_called_once_with(test[3], log=False)
             mock_steps.reset_mock()
+
+    def test_move_mm_raises_CommandError_if_mm_is_not_int_or_float(self):
+        """Move mm command should only take a numeric value."""
+        for items in ["bananas", AssertionError, self.basic_motor]:
+            with self.assertRaises(CommandError) as e:
+                self.basic_motor.move_mm(items)
+            assert str(e.exception) == f"{items} is not a valid millimeter measurement."
+
+    def test_move_mm_raises_ConfigurationError_if_mm_per_revolution_not_set(self):
+        """The mm_per_revolution attribute must be set to use move_mm."""
+        with self.assertRaises(ConfigurationError) as e:
+            self.basic_motor.move_mm(2)
+        assert str(e.exception) == "You have not designated a mm/rev for this motor."
+
+    @patch("motor_controller.models.logging")
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_rotations_logs_move(self, mock_nema, mock_logging):
+        """Function should log the move made."""
+        self.basic_motor.controller_class = mock_nema
+        self.basic_motor.mm_per_revolution = 1
+        self.basic_motor.move_mm(1)
+        mock_logging.info.assert_called_once_with(
+            f"Moving stepper {self.basic_motor.name} 1mm (200 steps) "
+            f"in the {self.basic_motor.direction_of_rotation} direction.",
+        )
+
+    @patch("motor_controller.models.StepperMotor.move_steps")
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_mm_calls_move_steps_with_correct_steps(self, mock_nema, mock_steps):
+        """Function should call move_steps with calced steps and logging off."""
+        self.basic_motor.steps_per_revolution = 2
+        self.basic_motor.mm_per_revolution = 1
+        self.basic_motor.controller_class = mock_nema
+        self.basic_motor.move_mm(1)
+        mock_steps.assert_called_once_with(2, log=False)
+
+    @patch("motor_controller.models.StepperMotor.move_steps")
+    @patch("motor_controller.models.A4988Nema")
+    def test_steps_calculation_in_move_mm(self, mock_nema, mock_steps):
+        """Test that the function always calculates correct steps for rotation."""
+        # [steps_per_revolution, mm, steptype, mm_per_revolution, expected_steps]
+        self.basic_motor.controller_class = mock_nema
+        self.basic_motor.MS1_GPIO_pin = 1
+        self.basic_motor.MS2_GPIO_pin = 2
+        self.basic_motor.MS3_GPIO_pin = 3
+
+        tests = [
+            [1, 1, "Full", 1, 1],
+            [1, 10, "Half", 1, 20],
+            [100, 1, "1/4", 2, 400],
+            [534, 0.5432, "Full", 1, 290],
+        ]
+        for test in tests:
+            self.basic_motor.steps_per_revolution = test[0]
+            self.basic_motor.steptype = test[2]
+            self.basic_motor.mm_per_revolution = test[3]
+            self.basic_motor.move_rotations(test[1])
+            mock_steps.assert_called_once_with(test[4], log=False)
+            mock_steps.reset_mock()
+
+    @patch("motor_controller.models.StepperMotor.clean")
+    def test_save_calls_clean_method(self, mock_clean):
+        """Saving the model should call clean."""
+        self.basic_motor.save()
+        mock_clean.assert_called_once()
