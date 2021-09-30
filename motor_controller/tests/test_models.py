@@ -262,3 +262,86 @@ class TestStepperMotor(TestCase):
             step_pin=self.basic_motor.step_GPIO_pin,
         )
         assert self.basic_motor._controller == "Return"
+
+    def test_steps_per_rev(self):
+        """Test function calculates properly."""
+        self.basic_motor.MS1_GPIO_pin = 1
+        self.basic_motor.MS2_GPIO_pin = 2
+        self.basic_motor.MS3_GPIO_pin = 3
+
+        # [steptype, steps_per_rev, expected_steps]
+        tests = [
+            ["Full", 100, 100],
+            ["Half", 200, 400],
+            ["1/4", 10, 40],
+            ["1/8", 20, 160],
+            ["1/16", 23, 23 * 16],
+        ]
+        for test in tests:
+            self.basic_motor.steptype = test[0]
+            self.basic_motor.steps_per_revolution = test[1]
+            assert self.basic_motor.steps_per_rev == test[2]
+
+    def test_direction_of_rotation_getter(self):
+        """Test the getter for direction of rotation."""
+        self.basic_motor._direction_of_rotation = True
+        assert self.basic_motor.direction_of_rotation == "clockwise"
+        self.basic_motor._direction_of_rotation = False
+        assert self.basic_motor.direction_of_rotation == "anti-clockwise"
+
+    def test_steptype_getter(self):
+        """Test for the steptype getter."""
+        for options in ["Full", "Half", "1/4", "1/8", "1/16", "barry"]:
+            self.basic_motor._steptype = options
+            assert self.basic_motor.steptype == options
+
+    def test_step_delay_getter(self):
+        """Test the step_delay getter."""
+        for options in [0.01, 0.1, 0.5, 1, 5, 105]:
+            self.basic_motor._step_delay = options
+            assert self.basic_motor.step_delay == options
+
+    def test_direction_of_rotation_setter(self):
+        """Test the direction_of_rotation setter."""
+        self.basic_motor.direction_of_rotation = "clockwise"
+        assert self.basic_motor._direction_of_rotation
+        self.basic_motor.direction_of_rotation = "anti-clockwise"
+        assert not self.basic_motor._direction_of_rotation
+
+        with self.assertRaises(ValueError) as e:
+            self.basic_motor.direction_of_rotation = "Dis is wrong Yo!"
+        assert (
+            str(e.exception)
+            == "That is not a valid option, please choose 'clockwise' or 'anti-clockwise'."
+        )
+
+    def test_steptype_setter_raises_value_error_if_GPIO_pins_not_set(self):
+        """Test for the steptype setter."""
+        with self.assertRaises(ValueError) as e:
+            self.basic_motor.steptype = "Half"
+        assert (
+            str(e.exception) == "MSX pins are not configured for this motor, "
+            "therefore only full steps are allowed."
+        )
+
+    def test_steptype_setter_raises_valuerror_if_steptype_not_in_list(self):
+        """Function should raise a ValueError if the requested steptype is not in list."""
+        self.basic_motor.MS1_GPIO_pin = 1
+        self.basic_motor.MS2_GPIO_pin = 2
+        self.basic_motor.MS3_GPIO_pin = 3
+
+        with self.assertRaises(ValueError) as e:
+            self.basic_motor.steptype = "Whatever"
+        assert (
+            str(e.exception) == "That is not a valid step type. Options are "
+            "['Full', 'Half', '1/4', '1/8', '1/16']"
+        )
+
+    def test_steptype_setter_sets_steptype_correctly(self):
+        self.basic_motor.MS1_GPIO_pin = 1
+        self.basic_motor.MS2_GPIO_pin = 2
+        self.basic_motor.MS3_GPIO_pin = 3
+
+        for possible in ["Full", "Half", "1/4", "1/8", "1/16"]:
+            self.basic_motor.steptype = possible
+            assert self.basic_motor._steptype == possible

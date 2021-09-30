@@ -221,7 +221,7 @@ class StepperMotor(Motor):
 
         Options are "clockwise" and "anti-clockwise".
         """
-        if self.direction_of_rotation:
+        if self._direction_of_rotation:
             return "clockwise"
         return "anti-clockwise"
 
@@ -258,10 +258,12 @@ class StepperMotor(Motor):
         """Setter for direction of rotation."""
         if direction == "clockwise":
             self._direction_of_rotation = True
+            return
         if direction == "anti-clockwise":
-            self._direction_of_rotation = True
+            self._direction_of_rotation = False
+            return
         raise ValueError(
-            "That is not a valid option, please choose 'clockwise' " "or 'anti-clockwise'.",
+            "That is not a valid option, please choose 'clockwise' or 'anti-clockwise'.",
         )
 
     @steptype.setter
