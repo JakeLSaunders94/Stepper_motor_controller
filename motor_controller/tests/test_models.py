@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 """Tests for models.py."""
 
-# Django
+# Standard Library
 from unittest.mock import patch
 
+# Django
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 # Project
-import motor_controller.constants
 from motor_controller.constants import AVAILABLE_RPI_GPIO_PINS
 from motor_controller.constants import STEPPER_DRIVER_TYPES
-from motor_controller.exceptions import ConfigurationError, ImplementationError
+from motor_controller.exceptions import ConfigurationError
+from motor_controller.exceptions import ImplementationError
 from motor_controller.models import Motor
 from motor_controller.models import StepperMotor
 from motor_controller.tests.utils import StepperMotorFactory
@@ -169,7 +170,7 @@ class TestStepperMotor(TestCase):
             motor1.get_controller_class()
         assert (
             str(e.exception) == "This class does not have a driver set yet. Save the "
-                                "model first."
+            "model first."
         )
 
     @patch("motor_controller.models.STEPPER_DRIVER_TYPES", [["A4988", "Tomatos"]])
@@ -186,7 +187,7 @@ class TestStepperMotor(TestCase):
     @patch("motor_controller.models.STEPPER_DRIVER_TYPES", [["A4988"]])
     def test_get_controller_class_returns_raises_error_if_bad_list(self):
         """Function should raise an Implementation error if driver class not set."""
-        with self.assertRaises(ImplementationError)as e:
+        with self.assertRaises(ImplementationError) as e:
             motor = StepperMotor(
                 driver_type="A4988",
                 name="First Motor",
@@ -195,4 +196,3 @@ class TestStepperMotor(TestCase):
             )
             motor.get_controller_class()
         assert str(e.exception) == "Driver class not set for driver."
-
