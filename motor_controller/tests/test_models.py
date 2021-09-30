@@ -248,7 +248,6 @@ class TestStepperMotor(TestCase):
         mock_nema_constants,
     ):
         """Function should assign and init an A4988Nema class with default MSX pin settings."""
-
         # Patch out the controller class, because of the multiple
         # imports from different places
         self.basic_motor.controller_class = mock_nema_models
@@ -338,6 +337,7 @@ class TestStepperMotor(TestCase):
         )
 
     def test_steptype_setter_sets_steptype_correctly(self):
+        """Test setting of steptype with setter."""
         self.basic_motor.MS1_GPIO_pin = 1
         self.basic_motor.MS2_GPIO_pin = 2
         self.basic_motor.MS3_GPIO_pin = 3
