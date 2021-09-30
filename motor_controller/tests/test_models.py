@@ -11,7 +11,8 @@ from django.test import TestCase
 # Project
 from motor_controller.constants import AVAILABLE_RPI_GPIO_PINS
 from motor_controller.constants import STEPPER_DRIVER_TYPES
-from motor_controller.exceptions import ConfigurationError, CommandError
+from motor_controller.exceptions import CommandError
+from motor_controller.exceptions import ConfigurationError
 from motor_controller.exceptions import ImplementationError
 from motor_controller.models import Motor
 from motor_controller.models import StepperMotor
@@ -354,7 +355,7 @@ class TestStepperMotor(TestCase):
 
     def test_step_delay_setter_raises_ValueError_if_not_int_or_float(self):
         """Step delay values should be integers or floats only."""
-        for items in ['bananas', AssertionError, self.basic_motor]:
+        for items in ["bananas", AssertionError, self.basic_motor]:
             with self.assertRaises(ValueError) as e:
                 self.basic_motor.step_delay = items
             assert str(e.exception) == "Step delay must be a numeric value in seconds."
@@ -367,7 +368,7 @@ class TestStepperMotor(TestCase):
 
     def test_init_delay_setter_raises_ValueError_if_not_int_or_float(self):
         """Init delay values should be integers or floats only."""
-        for items in ['bananas', AssertionError, self.basic_motor]:
+        for items in ["bananas", AssertionError, self.basic_motor]:
             with self.assertRaises(ValueError) as e:
                 self.basic_motor.init_delay = items
             assert str(e.exception) == "Step delay must be a numeric value in seconds."
@@ -378,3 +379,96 @@ class TestStepperMotor(TestCase):
             self.basic_motor.init_delay = items
             assert self.basic_motor._init_delay == float(items)
 
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_steps_raises_CommandError_if_steps_is_not_int(self, mock_nema):
+        """Move steps command should only take an integer value."""
+        for items in ["bananas", AssertionError, self.basic_motor]:
+            with self.assertRaises(CommandError) as e:
+                self.basic_motor.move_steps(items)
+            assert str(e.exception) == f"{items} is not a valid number of steps."
+
+    @patch("motor_controller.models.StepperMotor._init_controller_class")
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_steps_initalises_controller_if_not_initialised(self, mock_nema, mock_init):
+        """Move steps command should init the controller class if not done already."""
+        mock_init.return_value = "controller"
+        self.basic_motor._controller = None
+        with self.assertRaises(AttributeError):  # mocked nema
+            self.basic_motor.move_steps(1)
+        mock_init.assert_called_once()
+
+    @patch("motor_controller.models.logging")
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_steps_logs_move_if_requested(self, mock_nema, mock_logging):
+        """Function should log the move made if requested or default."""
+        self.basic_motor.controller_class = mock_nema
+        self.basic_motor.move_steps(1)
+        mock_logging.info.assert_called_once_with(
+            f"Moving stepper {self.basic_motor.name} 1 x {self.basic_motor.steptype} "
+            f"steps in the {self.basic_motor.direction_of_rotation} direction.",
+        )
+
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_steps_calls_motor_go_with_correct_params(self, mock_nema):
+        """Function should call move_motor with correct params."""
+        self.basic_motor._controller = mock_nema
+        self.basic_motor.move_steps(1)
+        mock_nema.motor_go.assert_called_once_with(
+            self.basic_motor._direction_of_rotation,
+            self.basic_motor._steptype,
+            1,
+            self.basic_motor._step_delay,
+            self.basic_motor._verbose,
+            self.basic_motor.init_delay,
+        )
+
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_rotations_raises_CommandError_if_rotations_is_not_int_or_float(self, mock_nema):
+        """Move steps command should only take a numeric value."""
+        for items in ["bananas", AssertionError, self.basic_motor]:
+            with self.assertRaises(CommandError) as e:
+                self.basic_motor.move_rotations(items)
+            assert str(e.exception) == f"{items} is not a valid number of rotations."
+
+    @patch("motor_controller.models.logging")
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_rotations_logs_move_if_requested(self, mock_nema, mock_logging):
+        """Function should log the move made."""
+        self.basic_motor.controller_class = mock_nema
+        self.basic_motor.move_rotations(1)
+        mock_logging.info.assert_called_once_with(
+            f"Moving stepper {self.basic_motor.name} 1 x rotations (200 steps) "
+            f"in the {self.basic_motor.direction_of_rotation} direction.",
+        )
+
+    @patch("motor_controller.models.StepperMotor.move_steps")
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_rotations_calls_move_steps_with_correct_steps(self, mock_nema, mock_steps):
+        """Function should call move_steps with calced steps and logging off."""
+        self.basic_motor.steps_per_revolution = 1
+        self.basic_motor.controller_class = mock_nema
+        self.basic_motor.move_rotations(1)
+        mock_steps.assert_called_once_with(1, log=False)
+
+    @patch("motor_controller.models.StepperMotor.move_steps")
+    @patch("motor_controller.models.A4988Nema")
+    def test_steps_per_rev_calculation_in_move_rotations(self, mock_nema, mock_steps):
+        """Test that the function always calculates correct steps for rotation."""
+        # [steps_per_revolution, rotations, steptype, expected_steps]
+        self.basic_motor.controller_class = mock_nema
+        self.basic_motor.MS1_GPIO_pin = 1
+        self.basic_motor.MS2_GPIO_pin = 2
+        self.basic_motor.MS3_GPIO_pin = 3
+
+        tests = [
+            [1, 1, "Full", 1],
+            [1, 10, "Half", 20],
+            [100, 1, "1/4", 400],
+            [534, 0.5432, "Full", 290]
+        ]
+        for test in tests:
+            self.basic_motor.steps_per_revolution = test[0]
+            self.basic_motor.steptype = test[2]
+            self.basic_motor.move_rotations(test[1])
+            mock_steps.assert_called_once_with(test[3], log=False)
+            mock_steps.reset_mock()

@@ -5,6 +5,8 @@
 import logging
 
 # Django
+from math import ceil
+
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -104,6 +106,7 @@ class StepperMotor(Motor):
             self.controller_class = self.get_controller_class()
         else:
             self.controller_class = None
+        self._controller = None  # Don't init this unless we're going to use it.
 
     driver_type = models.CharField(
         verbose_name="Motor Driver type",
@@ -297,7 +300,7 @@ class StepperMotor(Motor):
         self._init_delay = float(delay)
 
     # Movement commands
-    def move_steps(self, steps: int):
+    def move_steps(self, steps: int, log=True):
         """Move a given number of steps in the set direction."""
         if not isinstance(steps, int):
             raise CommandError(f"{steps} is not a valid number of steps.")
@@ -305,17 +308,19 @@ class StepperMotor(Motor):
         if not self._controller:
             self._init_controller_class()
 
-        logging.info(
-            f"Moving stepper {self.name} {steps} x {self.steptype} steps "
-            f"in the {self.direction_of_rotation} direction.",
-        )
+        if log:
+            logging.info(
+                f"Moving stepper {self.name} {steps} x {self.steptype} steps "
+                f"in the {self.direction_of_rotation} direction.",
+            )
+
         self._controller.motor_go(
-            self.direction_of_rotation,
-            self.steptype,
+            self._direction_of_rotation,
+            self._steptype,
             steps,
-            self.step_delay,
+            self._step_delay,
             self._verbose,
-            self.init_delay,
+            self._init_delay,
         )
 
     def move_rotations(self, rotations: [float, int]):
@@ -323,23 +328,15 @@ class StepperMotor(Motor):
         if not isinstance(rotations, int) and not isinstance(rotations, float):
             raise CommandError(f"{rotations} is not a valid number of rotations.")
 
-        if not self._controller:
-            self._init_controller_class()
-
-        steps = rotations * self.steps_per_revolution
+        # Needs to be a float, but will cause minor inaccuracies.
+        # Like, reeeeaaallllly minor.
+        steps = round(rotations * self.steps_per_rev)
 
         logging.info(
             f"Moving stepper {self.name} {rotations} x rotations ({steps} steps) "
             f"in the {self.direction_of_rotation} direction.",
         )
-        self._controller.motor_go(
-            self.direction_of_rotation,
-            self.steptype,
-            steps,
-            self.step_delay,
-            self._verbose,
-            self.init_delay,
-        )
+        self.move_steps(steps, log=False)
 
     def move_mm(self, mm: [float, int]):
         """Move the motor a given number or fraction of a mm."""
