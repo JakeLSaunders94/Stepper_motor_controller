@@ -2,6 +2,7 @@
 [![CircleCI](https://circleci.com/gh/JakeLSaunders94/Stepper_motor_controller/tree/master.svg?style=svg)](https://circleci.com/gh/JakeLSaunders94/Stepper_motor_controller/tree/master)
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 <a href="https://github.com/psf/black/blob/main/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
+[![codecov](https://codecov.io/gh/JakeLSaunders94/Stepper_motor_controller/branch/master/graph/badge.svg?token=6LHTN91968)](https://codecov.io/gh/JakeLSaunders94/Stepper_motor_controller)
 
 A reusable library for adding and controlling stepper motors through Django. Designed to be used as a re-usable Django
 app with the following:
