@@ -21,8 +21,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            pytest --cov --ds=test_settings.settings
-      - codecov/upload
+            pytest --cov=motor_controller --cov-report=xml --ds=test_settings.settings
       - run:
           name: Black
           command: |
@@ -31,3 +30,4 @@ jobs:
           name: Flake8
           command: |
             flake8 motor_controller test_settings
+      - codecov/upload
