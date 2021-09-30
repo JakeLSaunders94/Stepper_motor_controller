@@ -9,7 +9,6 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 # Project
-import motor_controller.models
 from motor_controller.constants import AVAILABLE_RPI_GPIO_PINS
 from motor_controller.constants import STEPPER_DRIVER_TYPES
 from motor_controller.exceptions import CommandError
