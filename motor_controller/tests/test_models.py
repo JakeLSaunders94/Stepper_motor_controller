@@ -11,7 +11,7 @@ from django.test import TestCase
 # Project
 from motor_controller.constants import AVAILABLE_RPI_GPIO_PINS
 from motor_controller.constants import STEPPER_DRIVER_TYPES
-from motor_controller.exceptions import ConfigurationError
+from motor_controller.exceptions import ConfigurationError, CommandError
 from motor_controller.exceptions import ImplementationError
 from motor_controller.models import Motor
 from motor_controller.models import StepperMotor
@@ -300,6 +300,12 @@ class TestStepperMotor(TestCase):
             self.basic_motor._step_delay = options
             assert self.basic_motor.step_delay == options
 
+    def test_init_delay_getter(self):
+        """Test the step_delay getter."""
+        for options in [0.01, 0.1, 0.5, 1, 5, 105]:
+            self.basic_motor._init_delay = options
+            assert self.basic_motor.init_delay == options
+
     def test_direction_of_rotation_setter(self):
         """Test the direction_of_rotation setter."""
         self.basic_motor.direction_of_rotation = "clockwise"
@@ -345,3 +351,30 @@ class TestStepperMotor(TestCase):
         for possible in ["Full", "Half", "1/4", "1/8", "1/16"]:
             self.basic_motor.steptype = possible
             assert self.basic_motor._steptype == possible
+
+    def test_step_delay_setter_raises_ValueError_if_not_int_or_float(self):
+        """Step delay values should be integers or floats only."""
+        for items in ['bananas', AssertionError, self.basic_motor]:
+            with self.assertRaises(ValueError) as e:
+                self.basic_motor.step_delay = items
+            assert str(e.exception) == "Step delay must be a numeric value in seconds."
+
+    def test_step_delay_saves_value_always_as_a_float(self):
+        """Setter should set value always as a float."""
+        for items in [0, 1, 5.2, 123, 12.132435344]:
+            self.basic_motor.step_delay = items
+            assert self.basic_motor._step_delay == float(items)
+
+    def test_init_delay_setter_raises_ValueError_if_not_int_or_float(self):
+        """Init delay values should be integers or floats only."""
+        for items in ['bananas', AssertionError, self.basic_motor]:
+            with self.assertRaises(ValueError) as e:
+                self.basic_motor.init_delay = items
+            assert str(e.exception) == "Step delay must be a numeric value in seconds."
+
+    def test_init_delay_saves_value_always_as_a_float(self):
+        """Setter should set value always as a float."""
+        for items in [0, 1, 5.2, 123, 12.132435344]:
+            self.basic_motor.init_delay = items
+            assert self.basic_motor._init_delay == float(items)
+
