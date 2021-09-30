@@ -8,6 +8,7 @@ import logging
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 
 # 3rd-party
 from RpiMotorLib.RpiMotorLib import A4988Nema
@@ -40,11 +41,27 @@ class Motor(models.Model):
 
     def clean(self):
         """Generic model clean functions for all Motor objects."""  # noqa: D401
+        super(Motor, self).clean()
+
+        # Check for already assigned GPIO pins in this instance.
+        for gpio_field in self.gpio_pin_fields:
+            for other_field in self.gpio_pin_fields:
+                if gpio_field == other_field:
+                    continue
+                if not getattr(self, gpio_field):
+                    continue
+                if getattr(self, gpio_field) == getattr(self, other_field):
+                    raise ValidationError(
+                        {
+                            gpio_field: f"This GPIO pin is used in this motor for "
+                            f"{other_field}, GPIO pins must be unique.",
+                        },
+                    )
+
         # Check for already assigned GPIO pins across all applicable models.
+        this_instance_pins_used = [getattr(self, x) for x in self.gpio_pin_fields]
+        this_instance_pins_used = [x for x in this_instance_pins_used if x]
         for pin_field in self.gpio_pin_fields:
-            this_model_val = getattr(self, pin_field)
-            if not this_model_val:
-                continue
 
             for modelstr in GPIO_PIN_USING_MODELS:
                 try:
@@ -55,26 +72,29 @@ class Motor(models.Model):
                         f", you defined {modelstr}.",
                     )
 
-                spec_model = apps.get_model(app_label=app, model_name=model)
-                for spec_field in spec_model.gpio_pin_fields:
-                    filters = {spec_field: this_model_val}
-                    pin_used = spec_model.objects.filter(**filters).count() > 0
-                    if not pin_used:
-                        continue
-                    else:
-                        raise ValidationError(
-                            {
-                                pin_field: f"This GPIO pin is already in use on "
-                                f"{spec_model}: {spec_field}, please select "
-                                f"another.",
-                            },
-                        )
+                model_to_search = apps.get_model(app_label=app, model_name=model)
+                filters = Q()
+                for spec_field in model_to_search().gpio_pin_fields:
+                    for value in this_instance_pins_used:
+                        filters.add(Q(**{spec_field: value}), Q.OR)
+
+                filtered_results = model_to_search.objects.filter(filters)
+                if filtered_results.count() > 0:
+
+                    raise ValidationError(
+                        {
+                            pin_field: f"This GPIO pin is already in use on "
+                            f"{filtered_results[0].name}, please select "
+                            f"another.",
+                        },
+                    )
 
 
 class StepperMotor(Motor):
     """Stepper motor object, with control API functionality built-in."""
 
     def __init__(self, *args, **kwargs):  # noqa: D107
+        super().__init__(*args, **kwargs)
         self._direction_of_rotation = True
         self._steptype = "Full"
         self._step_delay = 0.01
@@ -82,7 +102,9 @@ class StepperMotor(Motor):
         self._init_delay = 0.001
         if self.driver_type:
             self.controller_class = self.get_controller_class()
-        super().__init__(*args, **kwargs)
+        else:
+            self.controller_class = None
+        self._controller = None  # Don't init this unless we're going to use it.
 
     driver_type = models.CharField(
         verbose_name="Motor Driver type",
@@ -130,6 +152,8 @@ class StepperMotor(Motor):
 
     def clean(self):
         """Custom model validation for steppers."""  # noqa: D401
+        super().clean()
+
         # Validate that the correct fields are full for driver type
         if self.driver_type == "A4988":
             for field in ["direction_GPIO_pin", "step_GPIO_pin"]:
@@ -150,7 +174,7 @@ class StepperMotor(Motor):
     def get_controller_class(self):
         """Get the controller class for this motor."""
         if not self.driver_type:
-            return ConfigurationError(
+            raise ConfigurationError(
                 "This class does not have a driver set yet. Save the model first.",
             )
 
@@ -164,7 +188,7 @@ class StepperMotor(Motor):
     def _init_controller_class(self):
         """Initialize an instance of this motors controller class."""
         if not self.controller_class:
-            self.get_controller_class()
+            self.controller_class = self.get_controller_class()
 
         if self.controller_class == A4988Nema:
             if self.MS1_GPIO_pin and self.MS2_GPIO_pin and self.MS3_GPIO_pin:
@@ -198,7 +222,7 @@ class StepperMotor(Motor):
 
         Options are "clockwise" and "anti-clockwise".
         """
-        if self.direction_of_rotation:
+        if self._direction_of_rotation:
             return "clockwise"
         return "anti-clockwise"
 
@@ -235,10 +259,12 @@ class StepperMotor(Motor):
         """Setter for direction of rotation."""
         if direction == "clockwise":
             self._direction_of_rotation = True
+            return
         if direction == "anti-clockwise":
-            self._direction_of_rotation = True
+            self._direction_of_rotation = False
+            return
         raise ValueError(
-            "That is not a valid option, please choose 'clockwise' " "or 'anti-clockwise'.",
+            "That is not a valid option, please choose 'clockwise' or 'anti-clockwise'.",
         )
 
     @steptype.setter
@@ -272,7 +298,7 @@ class StepperMotor(Motor):
         self._init_delay = float(delay)
 
     # Movement commands
-    def move_steps(self, steps: int):
+    def move_steps(self, steps: int, log=True):
         """Move a given number of steps in the set direction."""
         if not isinstance(steps, int):
             raise CommandError(f"{steps} is not a valid number of steps.")
@@ -280,17 +306,19 @@ class StepperMotor(Motor):
         if not self._controller:
             self._init_controller_class()
 
-        logging.info(
-            f"Moving stepper {self.name} {steps} x {self.steptype} steps "
-            f"in the {self.direction_of_rotation} direction.",
-        )
+        if log:
+            logging.info(
+                f"Moving stepper {self.name} {steps} x {self.steptype} steps "
+                f"in the {self.direction_of_rotation} direction.",
+            )
+
         self._controller.motor_go(
-            self.direction_of_rotation,
-            self.steptype,
+            self._direction_of_rotation,
+            self._steptype,
             steps,
-            self.step_delay,
+            self._step_delay,
             self._verbose,
-            self.init_delay,
+            self._init_delay,
         )
 
     def move_rotations(self, rotations: [float, int]):
@@ -298,23 +326,15 @@ class StepperMotor(Motor):
         if not isinstance(rotations, int) and not isinstance(rotations, float):
             raise CommandError(f"{rotations} is not a valid number of rotations.")
 
-        if not self._controller:
-            self._init_controller_class()
-
-        steps = rotations * self.steps_per_revolution
+        # Needs to be a float, but will cause minor inaccuracies.
+        # Like, reeeeaaallllly minor.
+        steps = round(rotations * self.steps_per_rev)
 
         logging.info(
             f"Moving stepper {self.name} {rotations} x rotations ({steps} steps) "
             f"in the {self.direction_of_rotation} direction.",
         )
-        self._controller.motor_go(
-            self.direction_of_rotation,
-            self.steptype,
-            steps,
-            self.step_delay,
-            self._verbose,
-            self.init_delay,
-        )
+        self.move_steps(steps, log=False)
 
     def move_mm(self, mm: [float, int]):
         """Move the motor a given number or fraction of a mm."""
@@ -323,15 +343,17 @@ class StepperMotor(Motor):
         if not self.mm_per_revolution:
             raise ConfigurationError("You have not designated a mm/rev for this motor.")
 
-        if not self._controller:
-            self._init_controller_class()
-
         rotations = mm / self.mm_per_revolution
-        steps = rotations * self.steps_per_revolution
+        steps = round(rotations * self.steps_per_revolution)
 
         logging.info(
             f"Moving stepper {self.name} {mm}mm ({steps} steps) "
             f"in the {self.direction_of_rotation} direction.",
         )
 
-        self.move_rotations(rotations)
+        self.move_steps(steps, log=False)
+
+    def save(self, **kwargs):
+        """Call clean on save, even from backend."""
+        self.clean()
+        super(StepperMotor, self).save(**kwargs)
