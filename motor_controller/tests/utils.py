@@ -19,5 +19,5 @@ class StepperMotorFactory(DjangoModelFactory):
     direction_GPIO_pin = AVAILABLE_RPI_GPIO_PINS[0][0]
     step_GPIO_pin = AVAILABLE_RPI_GPIO_PINS[0][0]
 
-    class Meta:
+    class Meta:  # noqa: D106
         model = StepperMotor
