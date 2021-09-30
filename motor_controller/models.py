@@ -173,7 +173,7 @@ class StepperMotor(Motor):
     def get_controller_class(self):
         """Get the controller class for this motor."""
         if not self.driver_type:
-            return ConfigurationError(
+            raise ConfigurationError(
                 "This class does not have a driver set yet. Save the model first.",
             )
 
@@ -358,3 +358,8 @@ class StepperMotor(Motor):
         )
 
         self.move_rotations(rotations)
+
+    def save(self, **kwargs):
+        """Call clean on save, even from backend."""
+        self.clean()
+        super(StepperMotor, self).save(**kwargs)

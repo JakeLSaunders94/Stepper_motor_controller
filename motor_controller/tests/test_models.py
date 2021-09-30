@@ -2,12 +2,16 @@
 """Tests for models.py."""
 
 # Django
+from unittest.mock import patch
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 # Project
+import motor_controller.constants
 from motor_controller.constants import AVAILABLE_RPI_GPIO_PINS
 from motor_controller.constants import STEPPER_DRIVER_TYPES
+from motor_controller.exceptions import ConfigurationError, ImplementationError
 from motor_controller.models import Motor
 from motor_controller.models import StepperMotor
 from motor_controller.tests.utils import StepperMotorFactory
@@ -153,3 +157,42 @@ class TestStepperMotor(TestCase):
             f"This GPIO pin is already in use on {motor1.name}, "
             f"please select another." in str(e.exception)
         )
+
+    def test_get_controller_class_raises_ConfigurationError_if_no_driver_type(self):
+        """Configuration Error should be raised if instance has no driver type."""
+        motor1 = StepperMotor(
+            name="First Motor",
+            direction_GPIO_pin=5,
+            step_GPIO_pin=7,
+        )
+        with self.assertRaises(ConfigurationError) as e:
+            motor1.get_controller_class()
+        assert (
+            str(e.exception) == "This class does not have a driver set yet. Save the "
+                                "model first."
+        )
+
+    @patch("motor_controller.models.STEPPER_DRIVER_TYPES", [["A4988", "Tomatos"]])
+    def test_get_controller_class_returns_correct_constant(self):
+        """Function should return the second constant for given driver type."""
+        motor = StepperMotor(
+            driver_type="A4988",
+            name="First Motor",
+            direction_GPIO_pin=5,
+            step_GPIO_pin=7,
+        )
+        assert motor.get_controller_class() == "Tomatos"
+
+    @patch("motor_controller.models.STEPPER_DRIVER_TYPES", [["A4988"]])
+    def test_get_controller_class_returns_raises_error_if_bad_list(self):
+        """Function should raise an Implementation error if driver class not set."""
+        with self.assertRaises(ImplementationError)as e:
+            motor = StepperMotor(
+                driver_type="A4988",
+                name="First Motor",
+                direction_GPIO_pin=5,
+                step_GPIO_pin=7,
+            )
+            motor.get_controller_class()
+        assert str(e.exception) == "Driver class not set for driver."
+
