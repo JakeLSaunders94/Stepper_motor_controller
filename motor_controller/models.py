@@ -13,6 +13,8 @@ from django.db import models
 from RpiMotorLib.RpiMotorLib import A4988Nema
 
 # Local
+from django.db.models import Q
+
 from .constants import AVAILABLE_RPI_GPIO_PINS
 from .constants import GPIO_PIN_USING_MODELS
 from .constants import STEPPER_DRIVER_TYPES
@@ -40,11 +42,27 @@ class Motor(models.Model):
 
     def clean(self):
         """Generic model clean functions for all Motor objects."""  # noqa: D401
+        super(Motor, self).clean()
+
+        # Check for already assigned GPIO pins in this instance.
+        for gpio_field in self.gpio_pin_fields:
+            for other_field in self.gpio_pin_fields:
+                if gpio_field == other_field:
+                    continue
+                if not getattr(self, gpio_field):
+                    continue
+                if getattr(self, gpio_field) == getattr(self, other_field):
+                    raise ValidationError(
+                        {
+                            gpio_field: f"This GPIO pin is used in this motor for "
+                            f"{other_field}, GPIO pins must be unique.",
+                        },
+                    )
+
         # Check for already assigned GPIO pins across all applicable models.
+        this_instance_pins_used = [getattr(self, x) for x in self.gpio_pin_fields]
+        this_instance_pins_used = [x for x in this_instance_pins_used if x]
         for pin_field in self.gpio_pin_fields:
-            this_model_val = getattr(self, pin_field)
-            if not this_model_val:
-                continue
 
             for modelstr in GPIO_PIN_USING_MODELS:
                 try:
@@ -55,26 +73,30 @@ class Motor(models.Model):
                         f", you defined {modelstr}.",
                     )
 
-                spec_model = apps.get_model(app_label=app, model_name=model)
-                for spec_field in spec_model.gpio_pin_fields:
-                    filters = {spec_field: this_model_val}
-                    pin_used = spec_model.objects.filter(**filters).count() > 0
-                    if not pin_used:
-                        continue
-                    else:
-                        raise ValidationError(
-                            {
-                                pin_field: f"This GPIO pin is already in use on "
-                                f"{spec_model}: {spec_field}, please select "
-                                f"another.",
-                            },
-                        )
+                model_to_search = apps.get_model(app_label=app, model_name=model)
+                filters = Q()
+                for spec_field in model_to_search().gpio_pin_fields:
+                    for value in this_instance_pins_used:
+                        filters.add(Q(**{spec_field: value}), Q.OR)
+
+                filtered_results = model_to_search.objects.filter(filters)
+                if filtered_results.count() > 0:
+
+                    raise ValidationError(
+                        {
+                            pin_field: f"This GPIO pin is already in use on "
+                                       f"{filtered_results[0].name}, please select "
+                                       f"another.",
+                        },
+                    )
+
 
 
 class StepperMotor(Motor):
     """Stepper motor object, with control API functionality built-in."""
 
     def __init__(self, *args, **kwargs):  # noqa: D107
+        super().__init__(*args, **kwargs)
         self._direction_of_rotation = True
         self._steptype = "Full"
         self._step_delay = 0.01
@@ -82,7 +104,8 @@ class StepperMotor(Motor):
         self._init_delay = 0.001
         if self.driver_type:
             self.controller_class = self.get_controller_class()
-        super().__init__(*args, **kwargs)
+        else:
+            self.controller_class = None
 
     driver_type = models.CharField(
         verbose_name="Motor Driver type",
@@ -130,6 +153,8 @@ class StepperMotor(Motor):
 
     def clean(self):
         """Custom model validation for steppers."""  # noqa: D401
+        super().clean()
+
         # Validate that the correct fields are full for driver type
         if self.driver_type == "A4988":
             for field in ["direction_GPIO_pin", "step_GPIO_pin"]:
