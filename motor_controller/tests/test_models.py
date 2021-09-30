@@ -36,6 +36,14 @@ class TestMotor(TestCase):
 class TestStepperMotor(TestCase):
     """Tests for the StepperMotor class."""
 
+    def setUp(self) -> None:  # noqa: D102
+        self.basic_motor = StepperMotor(
+            driver_type="A4988",
+            name="Basic Motor",
+            direction_GPIO_pin=24,
+            step_GPIO_pin=26,
+        )
+
     def test_init_params(self):
         """The class should be initialised with the correct params."""
         motor = StepperMotorFactory()
@@ -196,3 +204,61 @@ class TestStepperMotor(TestCase):
             )
             motor.get_controller_class()
         assert str(e.exception) == "Driver class not set for driver."
+
+    @patch("motor_controller.models.StepperMotor.get_controller_class")
+    def test_init_controller_class_gets_controller_class_if_needed(self, mock_get):
+        """Function should get the controller class if not set."""
+        self.basic_motor.controller_class = None
+        mock_get.reset_mock()
+        self.basic_motor._init_controller_class()
+        mock_get.assert_called_once()
+        assert self.basic_motor.controller_class
+
+    @patch("motor_controller.constants.A4988Nema")
+    @patch("motor_controller.models.A4988Nema")
+    def test_A4988Nema_sets_controller_MSX_pins_set(self, mock_nema_models, mock_nema_constants):
+        """Function should assign and init an A4988Nema class with MSX pin settings."""
+        self.basic_motor.MS1_GPIO_pin = 1
+        self.basic_motor.MS2_GPIO_pin = 2
+        self.basic_motor.MS3_GPIO_pin = 3
+
+        # Patch out the controller class, because of the multiple
+        # imports from different places
+        self.basic_motor.controller_class = mock_nema_models
+
+        mock_nema_models.return_value = "Return"
+
+        self.basic_motor._init_controller_class()
+        mock_nema_models.assert_called_once_with(
+            direction_pin=self.basic_motor.direction_GPIO_pin,
+            mode_pins=(
+                self.basic_motor.MS1_GPIO_pin,
+                self.basic_motor.MS2_GPIO_pin,
+                self.basic_motor.MS3_GPIO_pin,
+            ),
+            step_pin=self.basic_motor.step_GPIO_pin,
+        )
+        assert self.basic_motor._controller == "Return"
+
+    @patch("motor_controller.constants.A4988Nema")
+    @patch("motor_controller.models.A4988Nema")
+    def test_A4988Nema_sets_controller_MSX_pins_not_set(
+        self,
+        mock_nema_models,
+        mock_nema_constants,
+    ):
+        """Function should assign and init an A4988Nema class with default MSX pin settings."""
+
+        # Patch out the controller class, because of the multiple
+        # imports from different places
+        self.basic_motor.controller_class = mock_nema_models
+
+        mock_nema_models.return_value = "Return"
+
+        self.basic_motor._init_controller_class()
+        mock_nema_models.assert_called_once_with(
+            direction_pin=self.basic_motor.direction_GPIO_pin,
+            mode_pins=(-1, -1, -1),
+            step_pin=self.basic_motor.step_GPIO_pin,
+        )
+        assert self.basic_motor._controller == "Return"

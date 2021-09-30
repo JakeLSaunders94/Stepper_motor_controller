@@ -187,7 +187,7 @@ class StepperMotor(Motor):
     def _init_controller_class(self):
         """Initialize an instance of this motors controller class."""
         if not self.controller_class:
-            self.get_controller_class()
+            self.controller_class = self.get_controller_class()
 
         if self.controller_class == A4988Nema:
             if self.MS1_GPIO_pin and self.MS2_GPIO_pin and self.MS3_GPIO_pin:
