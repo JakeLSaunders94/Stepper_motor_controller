@@ -94,7 +94,7 @@ class TestStepperMotor(TestCase):
             step_GPIO_pin=7,
             MS1_GPIO_pin=16,
             MS2_GPIO_pin=18,
-            MS3_GPIO_pin=21
+            MS3_GPIO_pin=21,
         )
         motor.clean()  # Should be fine
 
@@ -112,7 +112,7 @@ class TestStepperMotor(TestCase):
                 "MS1_GPIO_pin": ["All three of these must be set or none."],
                 "MS2_GPIO_pin": ["All three of these must be set or none."],
                 "MS3_GPIO_pin": ["All three of these must be set or none."],
-            }
+            },
         )
 
     def test_clean_faults_if_same_GPIO_pin_used_twice_in_same_instance(self):

@@ -8,13 +8,12 @@ import logging
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 
 # 3rd-party
 from RpiMotorLib.RpiMotorLib import A4988Nema
 
 # Local
-from django.db.models import Q
-
 from .constants import AVAILABLE_RPI_GPIO_PINS
 from .constants import GPIO_PIN_USING_MODELS
 from .constants import STEPPER_DRIVER_TYPES
@@ -85,11 +84,10 @@ class Motor(models.Model):
                     raise ValidationError(
                         {
                             pin_field: f"This GPIO pin is already in use on "
-                                       f"{filtered_results[0].name}, please select "
-                                       f"another.",
+                            f"{filtered_results[0].name}, please select "
+                            f"another.",
                         },
                     )
-
 
 
 class StepperMotor(Motor):
