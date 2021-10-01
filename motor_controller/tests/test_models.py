@@ -213,7 +213,6 @@ class TestStepperMotor(TestCase):
                 direction_GPIO_pin=5,
                 step_GPIO_pin=7,
             )
-            motor.get_controller_class()
         assert str(e.exception) == "Driver class not set for driver."
 
     @patch("motor_controller.models.StepperMotor.get_controller_class")
