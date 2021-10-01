@@ -66,7 +66,7 @@ class Motor(models.Model):
             for modelstr in GPIO_PIN_USING_MODELS:
                 try:
                     app, model = modelstr.split(".")
-                except IndexError:
+                except (IndexError, ValueError):
                     raise ImplementationError(
                         f"The format for defining models is '<app_name>.<model_name>'"
                         f", you defined {modelstr}.",

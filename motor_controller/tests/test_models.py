@@ -129,6 +129,16 @@ class TestStepperMotor(TestCase):
             },
         )
 
+    @patch("motor_controller.models.GPIO_PIN_USING_MODELS", ["Something"])
+    def test_clean_raises_ImplementationError_if_GPIO_PIN_USING_MODELS_incorrect(self):
+        """Clean should error if the models to check are defined incorrectly."""
+        with self.assertRaises(ImplementationError) as e:
+            self.basic_motor.clean()
+        assert (
+            str(e.exception) == "The format for defining models is '<app_name>.<model_name>', you "
+            "defined Something."
+        )
+
     def test_clean_faults_if_same_GPIO_pin_used_twice_in_same_instance(self):
         """Validationerror should be raised if the same GPIO pin used twice, same instance."""
         motor = StepperMotor(
