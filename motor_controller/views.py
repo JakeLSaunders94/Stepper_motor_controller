@@ -13,6 +13,8 @@ from django.views.decorators.http import require_POST
 from rest_framework import status
 
 # Project
+from motor_controller.exceptions import CommandError
+from motor_controller.exceptions import ConfigurationError
 from motor_controller.models import StepperMotor
 
 
@@ -34,7 +36,8 @@ def move_stepper_ajax_view(request, motor_id):
         motor = StepperMotor.objects.get(id=motor_id)
     except StepperMotor.DoesNotExist:
         return JsonResponse(
-            {"error": "The specified motor does not exist."}, status=status.HTTP_400_BAD_REQUEST
+            {"error": "The specified motor does not exist."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     try:
@@ -42,7 +45,12 @@ def move_stepper_ajax_view(request, motor_id):
     except KeyError:
         return JsonResponse(
             {"error": "The specified motor does not exist."},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-    move_function
+    try:
+        log = move_function(data["movement_amount"])
+    except (CommandError, ConfigurationError) as e:
+        return JsonResponse({"error": str(e.exception)}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    return JsonResponse({"log": log}, status=status.HTTP_200_OK)
