@@ -4,4 +4,7 @@
 # Django
 from django.contrib import admin  # noqa: F401
 
-# Register your models here.
+# Project
+from motor_controller.models import StepperMotor
+
+admin.site.register(StepperMotor)

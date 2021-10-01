@@ -306,11 +306,10 @@ class StepperMotor(Motor):
         if not self._controller:
             self._init_controller_class()
 
-        if log:
-            logging.info(
-                f"Moving stepper {self.name} {steps} x {self.steptype} steps "
-                f"in the {self.direction_of_rotation} direction.",
-            )
+        log_info = (
+            f"Moving stepper {self.name} {steps} x {self.steptype} steps "
+            f"in the {self.direction_of_rotation} direction."
+        )
 
         self._controller.motor_go(
             self._direction_of_rotation,
@@ -320,6 +319,10 @@ class StepperMotor(Motor):
             self._verbose,
             self._init_delay,
         )
+        if log:
+            logging.info(log_info)
+
+        return log_info
 
     def move_rotations(self, rotations: [float, int]):
         """Move a given number of rotations or points of a rotation."""
@@ -330,11 +333,15 @@ class StepperMotor(Motor):
         # Like, reeeeaaallllly minor.
         steps = round(rotations * self.steps_per_rev)
 
-        logging.info(
+        log_info = (
             f"Moving stepper {self.name} {rotations} x rotations ({steps} steps) "
-            f"in the {self.direction_of_rotation} direction.",
+            f"in the {self.direction_of_rotation} direction."
         )
+
         self.move_steps(steps, log=False)
+
+        logging.info(log_info)
+        return log_info
 
     def move_mm(self, mm: [float, int]):
         """Move the motor a given number or fraction of a mm."""
@@ -346,14 +353,21 @@ class StepperMotor(Motor):
         rotations = mm / self.mm_per_revolution
         steps = round(rotations * self.steps_per_revolution)
 
-        logging.info(
+        log_info = (
             f"Moving stepper {self.name} {mm}mm ({steps} steps) "
-            f"in the {self.direction_of_rotation} direction.",
+            f"in the {self.direction_of_rotation} direction."
         )
 
         self.move_steps(steps, log=False)
+
+        logging.info(log_info)
+        return log_info
 
     def save(self, **kwargs):
         """Call clean on save, even from backend."""
         self.clean()
         super(StepperMotor, self).save(**kwargs)
+
+    def __str__(self):
+        """String rep for model."""
+        return f"{self.name} - {self.description}"

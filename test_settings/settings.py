@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "motor_controller",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [

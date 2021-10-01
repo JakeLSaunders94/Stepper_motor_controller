@@ -207,7 +207,7 @@ class TestStepperMotor(TestCase):
     def test_get_controller_class_returns_raises_error_if_bad_list(self):
         """Function should raise an Implementation error if driver class not set."""
         with self.assertRaises(ImplementationError) as e:
-            motor = StepperMotor(
+            StepperMotor(
                 driver_type="A4988",
                 name="First Motor",
                 direction_GPIO_pin=5,
@@ -418,6 +418,16 @@ class TestStepperMotor(TestCase):
         )
 
     @patch("motor_controller.models.A4988Nema")
+    def test_move_steps_returns_log_info(self, mock_nema):
+        """Function should return the text log."""
+        self.basic_motor.controller_class = mock_nema
+        log = self.basic_motor.move_steps(1)
+        assert (
+            log == f"Moving stepper {self.basic_motor.name} 1 x {self.basic_motor.steptype} "
+            f"steps in the {self.basic_motor.direction_of_rotation} direction."
+        )
+
+    @patch("motor_controller.models.A4988Nema")
     def test_move_steps_calls_motor_go_with_correct_params(self, mock_nema):
         """Function should call move_motor with correct params."""
         self.basic_motor._controller = mock_nema
@@ -448,6 +458,16 @@ class TestStepperMotor(TestCase):
         mock_logging.info.assert_called_once_with(
             f"Moving stepper {self.basic_motor.name} 1 x rotations (200 steps) "
             f"in the {self.basic_motor.direction_of_rotation} direction.",
+        )
+
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_rotations_returns_move_log(self, mock_nema):
+        """Function should log the move made."""
+        self.basic_motor.controller_class = mock_nema
+        log = self.basic_motor.move_rotations(1)
+        assert (
+            log == f"Moving stepper {self.basic_motor.name} 1 x rotations (200 steps) in the "
+            f"{self.basic_motor.direction_of_rotation} direction."
         )
 
     @patch("motor_controller.models.StepperMotor.move_steps")
@@ -497,7 +517,7 @@ class TestStepperMotor(TestCase):
 
     @patch("motor_controller.models.logging")
     @patch("motor_controller.models.A4988Nema")
-    def test_move_rotations_logs_move(self, mock_nema, mock_logging):
+    def test_move_mm_logs_move(self, mock_nema, mock_logging):
         """Function should log the move made."""
         self.basic_motor.controller_class = mock_nema
         self.basic_motor.mm_per_revolution = 1
@@ -505,6 +525,17 @@ class TestStepperMotor(TestCase):
         mock_logging.info.assert_called_once_with(
             f"Moving stepper {self.basic_motor.name} 1mm (200 steps) "
             f"in the {self.basic_motor.direction_of_rotation} direction.",
+        )
+
+    @patch("motor_controller.models.A4988Nema")
+    def test_move_mm_returns_log(self, mock_nema):
+        """Function should log the move made."""
+        self.basic_motor.controller_class = mock_nema
+        self.basic_motor.mm_per_revolution = 1
+        log = self.basic_motor.move_mm(1)
+        assert (
+            log == f"Moving stepper {self.basic_motor.name} 1mm (200 steps) in the "
+            f"{self.basic_motor.direction_of_rotation} direction."
         )
 
     @patch("motor_controller.models.StepperMotor.move_steps")
