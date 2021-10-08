@@ -21,6 +21,12 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
+# TODO - This is super over egging it. Slim down.
+def requirements_as_list():
+    with open('requirements.txt') as f:
+        required = f.read().splitlines()
+    return required
+
 version = get_version("motor_controller")
 
 setup(
@@ -42,7 +48,7 @@ setup(
     url="https://github.com/JakeLSaunders94/django-migration-dbindex-check",
     license="MIT",
     packages=find_packages(exclude=["tests"]),
-    install_requires=[],
+    install_requires=requirements_as_list(),
     setup_requires=[],
     tests_require=["pytest"],
 )
