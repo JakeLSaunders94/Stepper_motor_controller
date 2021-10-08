@@ -25,6 +25,7 @@ def read(fname):
 def requirements_as_list():
     with open('requirements.txt') as f:
         required = f.read().splitlines()
+        print(required)
     return required
 
 version = get_version("motor_controller")
