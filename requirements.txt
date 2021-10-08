@@ -56,4 +56,4 @@ typing-extensions==3.10.0.2
 urllib3==1.26.7
 
 
-motor-controller @ git+https://github.com/JakeLSaunders94/RpiMotorLib.git@master#egg=RpiMotorLib
+RpiMotorLib @ git+https://github.com/JakeLSaunders94/RpiMotorLib.git@master#egg=RpiMotorLib
