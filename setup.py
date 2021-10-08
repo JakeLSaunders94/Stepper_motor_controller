@@ -24,7 +24,7 @@ def read(fname):
 version = get_version("motor_controller")
 
 setup(
-    name="stepper-motor-controller",
+    name="motor-controller",
     version=version,
     description="A utility for controlling stepper motors with Django and RaspberryPi.",
     long_description="read('README.md')",
