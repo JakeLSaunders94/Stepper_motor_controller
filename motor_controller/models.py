@@ -54,7 +54,7 @@ class Motor(models.Model):
                     raise ValidationError(
                         {
                             gpio_field: f"This GPIO pin is used in this motor for "
-                            f"{other_field}, GPIO pins must be unique.",
+                                        f"{other_field}, GPIO pins must be unique.",
                         },
                     )
 
@@ -80,12 +80,11 @@ class Motor(models.Model):
 
                 filtered_results = model_to_search.objects.filter(filters)
                 if filtered_results.count() > 0:
-
                     raise ValidationError(
                         {
                             pin_field: f"This GPIO pin is already in use on "
-                            f"{filtered_results[0].name}, please select "
-                            f"another.",
+                                       f"{filtered_results[0].name}, please select "
+                                       f"another.",
                         },
                     )
 
@@ -321,6 +320,14 @@ class StepperMotor(Motor):
         )
         if log:
             logging.info(log_info)
+            logging.info(
+                self._direction_of_rotation,
+                self._steptype,
+                steps,
+                self._step_delay,
+                self._verbose,
+                self._init_delay,
+            )
 
         return log_info
 
