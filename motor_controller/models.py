@@ -320,14 +320,6 @@ class StepperMotor(Motor):
         )
         if log:
             logging.info(log_info)
-            logging.info(
-                self._direction_of_rotation,
-                self._steptype,
-                steps,
-                self._step_delay,
-                self._verbose,
-                self._init_delay,
-            )
 
         return log_info
 
