@@ -50,9 +50,7 @@ class TestStepperMotor(TestCase):
         motor = StepperMotorFactory()
         assert motor._direction_of_rotation
         assert motor._steptype == "Full"
-        assert motor._step_delay == 0.01
         assert not motor._verbose
-        assert motor._init_delay == 0.001
 
     def test_init_assigns_controller_class_on_init_if_driver_type_is_set(self):
         """If the instance has a driver type, set the self.controller_class attr."""
