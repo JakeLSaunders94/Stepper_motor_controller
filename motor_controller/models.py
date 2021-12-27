@@ -66,7 +66,7 @@ class Motor(models.Model):
             for modelstr in GPIO_PIN_USING_MODELS:
                 try:
                     app, model = modelstr.split(".")
-                except IndexError:
+                except (IndexError, ValueError):
                     raise ImplementationError(
                         f"The format for defining models is '<app_name>.<model_name>'"
                         f", you defined {modelstr}.",
@@ -79,8 +79,9 @@ class Motor(models.Model):
                         filters.add(Q(**{spec_field: value}), Q.OR)
 
                 filtered_results = model_to_search.objects.filter(filters)
+                if self.pk:
+                    filtered_results = filtered_results.exclude(pk=self.pk)
                 if filtered_results.count() > 0:
-
                     raise ValidationError(
                         {
                             pin_field: f"This GPIO pin is already in use on "
@@ -97,9 +98,7 @@ class StepperMotor(Motor):
         super().__init__(*args, **kwargs)
         self._direction_of_rotation = True
         self._steptype = "Full"
-        self._step_delay = 0.01
         self._verbose = False  # not sure what this is yet.
-        self._init_delay = 0.001
         if self.driver_type:
             self.controller_class = self.get_controller_class()
         else:
@@ -138,6 +137,8 @@ class StepperMotor(Motor):
     )
     steps_per_revolution = models.IntegerField(default=200)
     mm_per_revolution = models.FloatField(null=True, blank=True)
+    _step_delay = models.FloatField(help_text="Delay between steps (seconds)", default=0.01)
+    _init_delay = models.FloatField(help_text="Delay before first step (seconds)", default=0.01)
 
     @property
     def gpio_pin_fields(self):
@@ -289,6 +290,7 @@ class StepperMotor(Motor):
         if not isinstance(delay, int) and not isinstance(delay, float):
             raise ValueError("Step delay must be a numeric value in seconds.")
         self._step_delay = float(delay)
+        self.save()
 
     @init_delay.setter
     def init_delay(self, delay):
@@ -296,6 +298,7 @@ class StepperMotor(Motor):
         if not isinstance(delay, int) and not isinstance(delay, float):
             raise ValueError("Step delay must be a numeric value in seconds.")
         self._init_delay = float(delay)
+        self.save()
 
     # Movement commands
     def move_steps(self, steps: int, log=True):
@@ -306,11 +309,10 @@ class StepperMotor(Motor):
         if not self._controller:
             self._init_controller_class()
 
-        if log:
-            logging.info(
-                f"Moving stepper {self.name} {steps} x {self.steptype} steps "
-                f"in the {self.direction_of_rotation} direction.",
-            )
+        log_info = (
+            f"Moving stepper {self.name} {steps} x {self.steptype} steps "
+            f"in the {self.direction_of_rotation} direction."
+        )
 
         self._controller.motor_go(
             self._direction_of_rotation,
@@ -320,6 +322,10 @@ class StepperMotor(Motor):
             self._verbose,
             self._init_delay,
         )
+        if log:
+            logging.info(log_info)
+
+        return log_info
 
     def move_rotations(self, rotations: [float, int]):
         """Move a given number of rotations or points of a rotation."""
@@ -330,11 +336,15 @@ class StepperMotor(Motor):
         # Like, reeeeaaallllly minor.
         steps = round(rotations * self.steps_per_rev)
 
-        logging.info(
+        log_info = (
             f"Moving stepper {self.name} {rotations} x rotations ({steps} steps) "
-            f"in the {self.direction_of_rotation} direction.",
+            f"in the {self.direction_of_rotation} direction."
         )
+
         self.move_steps(steps, log=False)
+
+        logging.info(log_info)
+        return log_info
 
     def move_mm(self, mm: [float, int]):
         """Move the motor a given number or fraction of a mm."""
@@ -346,14 +356,21 @@ class StepperMotor(Motor):
         rotations = mm / self.mm_per_revolution
         steps = round(rotations * self.steps_per_revolution)
 
-        logging.info(
+        log_info = (
             f"Moving stepper {self.name} {mm}mm ({steps} steps) "
-            f"in the {self.direction_of_rotation} direction.",
+            f"in the {self.direction_of_rotation} direction."
         )
 
         self.move_steps(steps, log=False)
+
+        logging.info(log_info)
+        return log_info
 
     def save(self, **kwargs):
         """Call clean on save, even from backend."""
         self.clean()
         super(StepperMotor, self).save(**kwargs)
+
+    def __str__(self):
+        """String rep for model."""
+        return f"{self.name} - {self.description}"
