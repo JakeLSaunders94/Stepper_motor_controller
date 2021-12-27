@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Urls."""
 
+# Django
 from django.urls import path
 
 # Local
