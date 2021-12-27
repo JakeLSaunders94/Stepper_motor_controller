@@ -7,7 +7,6 @@ import json
 # Django
 from django.http import JsonResponse
 from django.shortcuts import render  # noqa: F401
-from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 # 3rd-party
