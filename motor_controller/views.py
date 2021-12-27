@@ -21,7 +21,7 @@ from motor_controller.models import StepperMotor
 
 
 @require_POST
-def move_stepper_move_ajax_view(request, motor_id):
+def move_stepper_motor_ajax_view(request, motor_id):
     """
     Async view to allow for movement of a given stepper.
 
@@ -46,7 +46,7 @@ def move_stepper_move_ajax_view(request, motor_id):
         move_function = getattr(motor, data["movement_type"])
     except KeyError:
         return JsonResponse(
-            {"error": "The specified motor does not exist."},
+            {"error": "The specified movement type does not exist."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -105,7 +105,7 @@ def stepper_motor_basic_control_view(request):
     """
     context = {
         "stepper_motors": StepperMotor.objects.all(),
-        "post_url": reverse(move_stepper_move_ajax_view, args={"motor_id": 1}),
+        "post_url": reverse(move_stepper_motor_ajax_view, args={"motor_id": 1}),
         "movement_types": ["move_mm", "move_steps", "move_rotations"],
     }
     return render(request, "stepper_motor_basic_control_view.html", context)
