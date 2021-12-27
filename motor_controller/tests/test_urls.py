@@ -15,13 +15,13 @@ class TestURLs(TestCase):
     def test_urls(self):
         assert (
             reverse(move_stepper_motor_ajax_view, args=[1])
-            == "motor-controller/stepper-motor-move/1"
+            == "/motor-controller/stepper-motor-move/1"
         )
         assert (
                 reverse(stepper_motor_modal_ajax_view, args=[1])
-                == "motor-controller/stepper-motor-modal/1"
+                == "/motor-controller/stepper-motor-modal/1"
         )
         assert (
                 reverse(stepper_motor_basic_control_view, args=[1])
-                == "motor-controller/stepper-motor-control"
+                == "/motor-controller/stepper-motor-control"
         )
