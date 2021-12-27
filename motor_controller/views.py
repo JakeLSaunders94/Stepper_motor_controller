@@ -44,7 +44,7 @@ def move_stepper_motor_ajax_view(request, motor_id):
 
     try:
         move_function = getattr(motor, data["movement_type"])
-    except KeyError:
+    except AttributeError:
         return JsonResponse(
             {"error": "The specified movement type does not exist."},
             status=status.HTTP_400_BAD_REQUEST,
