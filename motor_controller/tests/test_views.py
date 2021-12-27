@@ -11,6 +11,7 @@ from unittest.mock import patch
 # Django
 from django.test import RequestFactory
 from django.test import TestCase
+from django.urls import reverse
 
 # Project
 from motor_controller.exceptions import CommandError
@@ -19,6 +20,7 @@ from motor_controller.exceptions import ImplementationError
 from motor_controller.models import StepperMotor
 from motor_controller.tests.utils import StepperMotorFactory
 from motor_controller.views import move_stepper_motor_ajax_view
+from motor_controller.views import stepper_motor_basic_control_view
 from motor_controller.views import stepper_motor_modal_ajax_view
 
 
@@ -192,3 +194,20 @@ class TestStepperMotorModalAJAXView(TestCase):
         assert json.loads(response.content) == {
             "log": "Attribute set successfully, new value 1.0",
         }
+
+
+class TestStepperMotorBasicControlView(TestCase):
+    """Tests for stepper_motor_basic_control_view."""
+
+    def setUp(self) -> None:  # noqa: D102
+        self.factory = RequestFactory()
+        self.view = stepper_motor_basic_control_view
+        self.motor = StepperMotorFactory()
+
+    def test_context(self):
+        """Test for correct context items."""
+        response = self.client.get(reverse(self.view))
+        self.assertQuerysetEqual(StepperMotor.objects.all(), response.context["stepper_motors"])
+        assert response.context["movement_types"] == ["move_mm", "move_steps", "move_rotations"]
+
+        self.assertTemplateUsed("stepper_motor_basic_control_view.html")

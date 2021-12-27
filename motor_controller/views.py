@@ -106,7 +106,6 @@ def stepper_motor_basic_control_view(request):
     """
     context = {
         "stepper_motors": StepperMotor.objects.all(),
-        "post_url": reverse(move_stepper_motor_ajax_view, args={"motor_id": 1}),
         "movement_types": ["move_mm", "move_steps", "move_rotations"],
     }
     return render(request, "stepper_motor_basic_control_view.html", context)
