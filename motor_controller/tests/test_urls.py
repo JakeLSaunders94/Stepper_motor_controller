@@ -22,6 +22,6 @@ class TestURLs(TestCase):
                 == "/motor-controller/stepper-motor-modal/1"
         )
         assert (
-                reverse(stepper_motor_basic_control_view, args=[1])
+                reverse(stepper_motor_basic_control_view)
                 == "/motor-controller/stepper-motor-control"
         )
