@@ -96,9 +96,7 @@ class StepperMotor(Motor):
         super().__init__(*args, **kwargs)
         self._direction_of_rotation = True
         self._steptype = "Full"
-        self._step_delay = 0.01
         self._verbose = False  # not sure what this is yet.
-        self._init_delay = 0.001
         if self.driver_type:
             self.controller_class = self.get_controller_class()
         else:
@@ -137,6 +135,8 @@ class StepperMotor(Motor):
     )
     steps_per_revolution = models.IntegerField(default=200)
     mm_per_revolution = models.FloatField(null=True, blank=True)
+    _step_delay = models.FloatField(help_text="Delay between steps (seconds)", default=0.01)
+    _init_delay = models.FloatField(help_text="Delay before first step (seconds)", default=0.01)
 
     @property
     def gpio_pin_fields(self):
