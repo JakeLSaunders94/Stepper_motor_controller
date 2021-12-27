@@ -13,4 +13,5 @@ This package makes registering and controlling as many stepper motors as you can
 You can register and configure motors and assign them to GPIO pins. Once this is complete you can just get() a motor 
 directly from the DB and perform actions with it.
 
-
+**NOTE: This django app exposes unprotected API endpoints for direct control of your stepper motors.
+DO NOT deploy this anywhere except your trusted local network without implementing auth!**
