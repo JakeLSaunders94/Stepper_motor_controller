@@ -77,7 +77,7 @@ def stepper_motor_modal_ajax_view(request, motor_id):
     try:
         motor = StepperMotor.objects.get(id=motor_id)
     except StepperMotor.DoesNotExist:
-        response = {"error": "This stepper motor does not exist."}
+        response = {"error": "The specified motor does not exist."}
         return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
 
     if attr[:1] == "_":
