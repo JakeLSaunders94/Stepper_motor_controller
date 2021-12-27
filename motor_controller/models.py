@@ -54,7 +54,7 @@ class Motor(models.Model):
                     raise ValidationError(
                         {
                             gpio_field: f"This GPIO pin is used in this motor for "
-                                        f"{other_field}, GPIO pins must be unique.",
+                            f"{other_field}, GPIO pins must be unique.",
                         },
                     )
 
@@ -83,8 +83,8 @@ class Motor(models.Model):
                     raise ValidationError(
                         {
                             pin_field: f"This GPIO pin is already in use on "
-                                       f"{filtered_results[0].name}, please select "
-                                       f"another.",
+                            f"{filtered_results[0].name}, please select "
+                            f"another.",
                         },
                     )
 
@@ -161,7 +161,11 @@ class StepperMotor(Motor):
                         {field: "This field is required for this driver type."},
                     )
             if self.MS1_GPIO_pin or self.MS2_GPIO_pin or self.MS3_GPIO_pin:
-                if not self.MS1_GPIO_pin or not self.MS2_GPIO_pin or not self.MS3_GPIO_pin:
+                if (
+                    not self.MS1_GPIO_pin
+                    or not self.MS2_GPIO_pin
+                    or not self.MS3_GPIO_pin
+                ):
                     raise ValidationError(
                         {
                             "MS1_GPIO_pin": "All three of these must be set or none.",
