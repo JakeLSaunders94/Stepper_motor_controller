@@ -85,13 +85,14 @@ def stepper_motor_modal_ajax_view(request, motor_id):
         return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
 
     try:
+        getattr(motor, attr)
         setattr(motor, attr, value)
     except AttributeError:
         response = {"error": "Could not set this attribute, does not exist."}
         return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
     except (CommandError, ImplementationError) as e:
         response = {"error": f"Could not set this attribute, error {e}."}
-        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse(response, status=status.HTTP_501_NOT_IMPLEMENTED)
 
     response = {"log": f"Attribute set successfully, new value {getattr(motor, attr)}"}
     return JsonResponse(response, status=status.HTTP_200_OK)

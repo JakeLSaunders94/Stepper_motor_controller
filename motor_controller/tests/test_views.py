@@ -5,6 +5,7 @@ import json
 from http.client import BAD_REQUEST
 from http.client import NOT_IMPLEMENTED
 from http.client import OK
+from unittest.mock import Mock
 from unittest.mock import patch
 
 # Django
@@ -14,6 +15,8 @@ from django.test import TestCase
 # Project
 from motor_controller.exceptions import CommandError
 from motor_controller.exceptions import ConfigurationError
+from motor_controller.exceptions import ImplementationError
+from motor_controller.models import StepperMotor
 from motor_controller.tests.utils import StepperMotorFactory
 from motor_controller.views import move_stepper_motor_ajax_view
 from motor_controller.views import stepper_motor_modal_ajax_view
@@ -99,7 +102,9 @@ class TestStepperMotorModalAJAXView(TestCase):
             }
             payload.pop(key)
             request = self.factory.post(
-                "/", data=json.dumps(payload), content_type="application/json"
+                "/",
+                data=json.dumps(payload),
+                content_type="application/json",
             )
             response = self.view(request, motor_id=self.motor.id)
             assert response.status_code == BAD_REQUEST
@@ -132,7 +137,7 @@ class TestStepperMotorModalAJAXView(TestCase):
         response = self.view(request, motor_id=self.motor.id)
         assert response.status_code == BAD_REQUEST
         assert json.loads(response.content) == {
-            "error": "You cannot set protected attributes with this API."
+            "error": "You cannot set protected attributes with this API.",
         }
 
     def test_non_existent_attribute_returns_400_error(self):
@@ -148,4 +153,42 @@ class TestStepperMotorModalAJAXView(TestCase):
         assert response.status_code == BAD_REQUEST
         assert json.loads(response.content) == {
             "error": "Could not set this attribute, does not exist.",
+        }
+
+    def test_command_error_and_configuration_error_return_error_as_json(self):
+        """If a CommandError or ImplementationError occur, send the error text back as JSON."""
+        setter_mock = Mock(wraps=StepperMotor.step_delay.fset)
+        mock_property = StepperMotor.step_delay.setter(setter_mock)
+        with patch.object(StepperMotor, "step_delay", mock_property):
+            for effect in [CommandError, ImplementationError]:
+                payload = {"motor_id": self.motor.id, "property": "step_delay", "value": 123}
+                setter_mock.reset_mock()
+                setter_mock.side_effect = effect("Error occurred!")
+                request = self.factory.post(
+                    "/",
+                    data=json.dumps(payload),
+                    content_type="application/json",
+                )
+                response = self.view(request, motor_id=self.motor.id)
+                setter_mock.assert_called_once_with(self.motor, 123)
+                assert response.status_code == NOT_IMPLEMENTED
+                assert json.loads(response.content) == {
+                    "error": "Could not set this attribute, error Error occurred!.",
+                }
+
+    def test_successful_set_returns_new_attribute_value(self):
+        """A successful request should return the new value as a log."""
+        payload = {
+            "motor_id": self.motor.id,
+            "property": "init_delay",
+            "value": 1,
+        }
+        request = self.factory.post("/", data=json.dumps(payload), content_type="application/json")
+
+        response = self.view(request, motor_id=self.motor.id)
+        assert response.status_code == OK
+        self.motor.refresh_from_db()
+        assert self.motor.init_delay == 1.0
+        assert json.loads(response.content) == {
+            "log": "Attribute set successfully, new value 1.0",
         }

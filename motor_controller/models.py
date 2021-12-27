@@ -79,6 +79,8 @@ class Motor(models.Model):
                         filters.add(Q(**{spec_field: value}), Q.OR)
 
                 filtered_results = model_to_search.objects.filter(filters)
+                if self.pk:
+                    filtered_results = filtered_results.exclude(pk=self.pk)
                 if filtered_results.count() > 0:
                     raise ValidationError(
                         {
@@ -288,6 +290,7 @@ class StepperMotor(Motor):
         if not isinstance(delay, int) and not isinstance(delay, float):
             raise ValueError("Step delay must be a numeric value in seconds.")
         self._step_delay = float(delay)
+        self.save()
 
     @init_delay.setter
     def init_delay(self, delay):
@@ -295,6 +298,7 @@ class StepperMotor(Motor):
         if not isinstance(delay, int) and not isinstance(delay, float):
             raise ValueError("Step delay must be a numeric value in seconds.")
         self._init_delay = float(delay)
+        self.save()
 
     # Movement commands
     def move_steps(self, steps: int, log=True):
