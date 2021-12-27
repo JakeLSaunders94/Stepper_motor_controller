@@ -161,11 +161,7 @@ class StepperMotor(Motor):
                         {field: "This field is required for this driver type."},
                     )
             if self.MS1_GPIO_pin or self.MS2_GPIO_pin or self.MS3_GPIO_pin:
-                if (
-                    not self.MS1_GPIO_pin
-                    or not self.MS2_GPIO_pin
-                    or not self.MS3_GPIO_pin
-                ):
+                if not self.MS1_GPIO_pin or not self.MS2_GPIO_pin or not self.MS3_GPIO_pin:
                     raise ValidationError(
                         {
                             "MS1_GPIO_pin": "All three of these must be set or none.",
