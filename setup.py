@@ -23,10 +23,11 @@ def read(fname):
 
 # TODO - This is super over egging it. Slim down.
 def requirements_as_list():
-    with open('requirements.txt') as f:
+    with open("requirements.txt") as f:
         required = f.read().splitlines()
         print(required)
     return required
+
 
 version = get_version("motor_controller")
 

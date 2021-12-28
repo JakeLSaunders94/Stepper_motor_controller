@@ -19,10 +19,16 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
-                ("name", models.CharField(help_text="An identifiable name.", max_length=200)),
+                (
+                    "name",
+                    models.CharField(help_text="An identifiable name.", max_length=200),
+                ),
             ],
             options={
                 "db_table": None,
@@ -45,7 +51,8 @@ class Migration(migrations.Migration):
                 (
                     "switch_type",
                     models.CharField(
-                        choices=[("PTM", "Push To Make"), ("PTB", "Push To Break")], max_length=200
+                        choices=[("PTM", "Push To Make"), ("PTB", "Push To Break")],
+                        max_length=200,
                     ),
                 ),
                 (

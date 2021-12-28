@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "motor_controller",
     "rest_framework",
-    "switch_controller"
+    "switch_controller",
 ]
 
 MIDDLEWARE = [

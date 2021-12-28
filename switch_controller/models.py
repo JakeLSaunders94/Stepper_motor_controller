@@ -29,4 +29,3 @@ class PushSwitch(Switch):
         return [
             "input_GPIO_pin",
         ]
-

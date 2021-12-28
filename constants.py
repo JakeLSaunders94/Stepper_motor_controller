@@ -34,4 +34,7 @@ AVAILABLE_RPI_GPIO_PINS = [
 
 # These are all the models that use GPIO pins.
 # Used to check each pin is only used once.
-GPIO_PIN_USING_MODELS = ["motor_controller.StepperMotor", "switch_controller.PushSwitch"]
+GPIO_PIN_USING_MODELS = [
+    "motor_controller.StepperMotor",
+    "switch_controller.PushSwitch",
+]
