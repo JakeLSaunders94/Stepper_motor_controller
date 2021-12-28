@@ -4,8 +4,6 @@
 # 3rd-party
 from RpiMotorLib.RpiMotorLib import A4988Nema
 
-# Project
-
 STEPPER_DRIVER_TYPES = [
     # [stepper_type_name, rpimsotorlib_driver_class]
     # Add to this as support comes online.
