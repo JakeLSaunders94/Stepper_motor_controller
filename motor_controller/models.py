@@ -14,8 +14,8 @@ from django.db.models import Q
 from RpiMotorLib.RpiMotorLib import A4988Nema
 
 # Local
-from .constants import AVAILABLE_RPI_GPIO_PINS
-from .constants import GPIO_PIN_USING_MODELS
+from constants import AVAILABLE_RPI_GPIO_PINS
+from constants import GPIO_PIN_USING_MODELS
 from .constants import STEPPER_DRIVER_TYPES
 from .exceptions import CommandError
 from .exceptions import ConfigurationError
