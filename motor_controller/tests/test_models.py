@@ -127,7 +127,7 @@ class TestStepperMotor(TestCase):
             },
         )
 
-    @patch("motor_controller.models.GPIO_PIN_USING_MODELS", ["Something"])
+    @patch("common.utils.GPIO_PIN_USING_MODELS", ["Something"])
     def test_clean_raises_ImplementationError_if_GPIO_PIN_USING_MODELS_incorrect(self):
         """Clean should error if the models to check are defined incorrectly."""
         with self.assertRaises(ImplementationError) as e:
