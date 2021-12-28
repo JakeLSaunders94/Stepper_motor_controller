@@ -5,7 +5,6 @@
 from RpiMotorLib.RpiMotorLib import A4988Nema
 
 # Project
-import constants as global_constants  # noqa: F401
 
 STEPPER_DRIVER_TYPES = [
     # [stepper_type_name, rpimsotorlib_driver_class]

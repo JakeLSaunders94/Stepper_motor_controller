@@ -5,17 +5,16 @@
 import logging
 
 # Django
-from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
 
 # 3rd-party
 from RpiMotorLib.RpiMotorLib import A4988Nema
 
 # Project
-from constants import AVAILABLE_RPI_GPIO_PINS
-from constants import GPIO_PIN_USING_MODELS
+from common.constants import AVAILABLE_RPI_GPIO_PINS
+from common.utils import check_for_GPIO_pin_use_in_this_and_other_models
+from common.utils import check_for_GPIO_pin_use_in_this_instance
 
 # Local
 from .constants import STEPPER_DRIVER_TYPES
@@ -44,53 +43,8 @@ class Motor(models.Model):
     def clean(self):
         """Generic model clean functions for all Motor objects."""  # noqa: D401
         super(Motor, self).clean()
-
-        # Check for already assigned GPIO pins in this instance.
-        for gpio_field in self.gpio_pin_fields:
-            for other_field in self.gpio_pin_fields:
-                if gpio_field == other_field:
-                    continue
-                if not getattr(self, gpio_field):
-                    continue
-                if getattr(self, gpio_field) == getattr(self, other_field):
-                    raise ValidationError(
-                        {
-                            gpio_field: f"This GPIO pin is used in this motor for "
-                            f"{other_field}, GPIO pins must be unique.",
-                        },
-                    )
-
-        # Check for already assigned GPIO pins across all applicable models.
-        this_instance_pins_used = [getattr(self, x) for x in self.gpio_pin_fields]
-        this_instance_pins_used = [x for x in this_instance_pins_used if x]
-        for pin_field in self.gpio_pin_fields:
-
-            for modelstr in GPIO_PIN_USING_MODELS:
-                try:
-                    app, model = modelstr.split(".")
-                except (IndexError, ValueError):
-                    raise ImplementationError(
-                        f"The format for defining models is '<app_name>.<model_name>'"
-                        f", you defined {modelstr}.",
-                    )
-
-                model_to_search = apps.get_model(app_label=app, model_name=model)
-                filters = Q()
-                for spec_field in model_to_search().gpio_pin_fields:
-                    for value in this_instance_pins_used:
-                        filters.add(Q(**{spec_field: value}), Q.OR)
-
-                filtered_results = model_to_search.objects.filter(filters)
-                if self.pk:
-                    filtered_results = filtered_results.exclude(pk=self.pk)
-                if filtered_results.count() > 0:
-                    raise ValidationError(
-                        {
-                            pin_field: f"This GPIO pin is already in use on "
-                            f"{filtered_results[0].name}, please select "
-                            f"another.",
-                        },
-                    )
+        check_for_GPIO_pin_use_in_this_instance(self)
+        check_for_GPIO_pin_use_in_this_and_other_models(self)
 
 
 class StepperMotor(Motor):

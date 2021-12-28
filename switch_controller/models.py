@@ -4,7 +4,7 @@
 from django.db import models
 
 # Project
-from constants import AVAILABLE_RPI_GPIO_PINS
+from common.constants import AVAILABLE_RPI_GPIO_PINS
 from switch_controller.constants import PUSH_SWITCH_TYPES
 
 
