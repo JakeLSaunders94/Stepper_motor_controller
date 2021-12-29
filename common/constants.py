@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 """Globally used constants for all apps."""
 
+# Conditional GPIO import for non Pi machine testing purposes
+try:
+    # 3rd-party
+    import RPi.GPIO as GPIO
+except ImportError:
+    # 3rd-party
+    import Mock.GPIO as GPIO
+
 AVAILABLE_RPI_GPIO_PINS = [
     (2, "GPIO 2 - Pin 3"),
     (3, "GPIO 3 - Pin 5"),
@@ -38,3 +46,5 @@ GPIO_PIN_USING_MODELS = [
     "motor_controller.StepperMotor",
     "switch_controller.PushSwitch",
 ]
+
+RPI_GPIO_MODE = GPIO.BOARD
