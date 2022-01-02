@@ -7,7 +7,7 @@
 A reusable django app for basic control of hardware attached to a Raspberry Pi. This 
 will currently control:
  - NEMA-X motors (using A4988 Stepper Controllers)
- - PTM / PRB Switches
+ - PTM / PTB Switches
 
 This package makes registering and controlling as many stepper motors as you can attach to the Pi's GPIO pins trivial. 
 You can register and configure motors and assign them to GPIO pins. Once this is complete you can just get() a motor 
