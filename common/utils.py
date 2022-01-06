@@ -56,7 +56,11 @@ def check_for_GPIO_pin_use_in_this_and_other_models(instance):
                     f", you defined {modelstr}.",
                 )
 
-            model_to_search = apps.get_model(app_label=app, model_name=model)
+            try:
+                model_to_search = apps.get_model(app_label=app, model_name=model)
+            except LookupError:
+                # App is not installed in parent app.
+                continue
             filters = Q()
             for spec_field in model_to_search().gpio_pin_fields:
                 for value in this_instance_pins_used:
