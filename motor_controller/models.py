@@ -3,10 +3,9 @@
 
 # Standard Library
 import logging
-
-# Django
 from abc import ABC
 
+# Django
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -18,7 +17,7 @@ from common.constants import AVAILABLE_RPI_GPIO_PINS
 from common.exceptions import CommandError
 from common.exceptions import ConfigurationError
 from common.exceptions import ImplementationError
-from common.models import Lockout  # noqa: F401  Install the lockout table in this app
+from common.models import Lockout as common_Lockout
 from common.models import PersistentDevice
 from common.utils import check_for_GPIO_pin_use_in_this_and_other_models
 from common.utils import check_for_GPIO_pin_use_in_this_instance
@@ -27,7 +26,11 @@ from common.utils import check_for_GPIO_pin_use_in_this_instance
 from .constants import STEPPER_DRIVER_TYPES
 
 
-class Motor(PersistentDevice):
+class Lockout(models.Model, common_Lockout):
+    """Add the common lockout model to this app."""
+
+
+class Motor(models.Model, PersistentDevice):
     """A Generic class for all motors, subclassed by concrete motor type classes."""
 
     description = models.TextField(null=True, blank=True)

@@ -21,7 +21,7 @@ except ImportError:
 from common.exceptions import CommandError
 
 
-class Lockout(models.Model):
+class Lockout:
     """
     A generic lockout model for keeping track of locks on PersistentDevices.
 
@@ -34,7 +34,7 @@ class Lockout(models.Model):
     lockout_end = models.DateTimeField()
 
 
-class PersistentDevice(models.Model):
+class PersistentDevice:
     """
     Persist hardware config to database and lock for use.
 
@@ -46,6 +46,7 @@ class PersistentDevice(models.Model):
     To get around this, create a locking mech with an inbuilt timeout that checks that the device
     is in use.
     """
+    name = models.CharField(max_length=200, verbose_name="Human Name")
 
     def initialise(self, lockout_time=1000):
         """Check if the device has a lock and initialise."""
