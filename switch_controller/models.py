@@ -129,3 +129,7 @@ class PushSwitch(Switch):
     def remove_edge_detection(self):
         """Remove all edge detection from the switch."""
         GPIO.remove_event_detect(self.input_GPIO_pin)
+
+    def kill(self):
+        """Kill the GPIO connection and associated stuff."""
+        GPIO.cleanup()

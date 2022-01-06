@@ -13,21 +13,33 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 # Project
-import switch_controller.models
 from common.constants import AVAILABLE_RPI_GPIO_PINS
 from common.constants import RPI_GPIO_MODE
 from common.exceptions import ImplementationError
 from switch_controller.constants import PUSH_SWITCH_TYPES
 from switch_controller.models import PushSwitch
 
+# Conditional GPIO import for non Pi machine testing purposes
+try:
+    # 3rd-party
+    import RPi.GPIO as GPIO
+except ImportError:
+    # 3rd-party
+    import Mock.GPIO as GPIO
+
 # Local
 from .utils import PushSwitchFactory
 
 
 class TestPushSwitch(TestCase):
-    """Tests for the PushSwitch model."""
+    """
+    Tests for the PushSwitch model.
 
-    def setUp(self) -> None:  # noqa: D012
+    There's a lot of mocking here as we're dealing with the GPIO module directly which makes
+    unit testing difficult.
+    """
+
+    def setUp(self) -> None:  # noqa: D102
         self.switch = PushSwitchFactory()
 
     def test_push_switch_type_choices(self):
@@ -61,7 +73,7 @@ class TestPushSwitch(TestCase):
         )
 
     def test_clean_faults_if_same_GPIO_pin_used_twice_in_different_instance(self):
-        """ValidationError should be raised if the same GPIO pin used twice, different instance."""
+        """Validationrror should be raised if the same GPIO pin used twice, different instance."""
         switch1 = PushSwitch.objects.create(
             name="First Switch",
             switch_type=PUSH_SWITCH_TYPES[0][0],
@@ -113,3 +125,64 @@ class TestPushSwitch(TestCase):
 
         self.switch.switch_type = "PTB"
         assert not self.switch.is_pressed
+
+    def test_wait_for_edge_initialises_if_not_already(self):
+        """Wait_for_edge should initilaise the GPIO if it hasn't been done already."""
+        assert not self.switch.initialised
+        self.switch.wait_for_edge(edge=GPIO.HIGH)
+        assert self.switch.initialised
+
+    @patch("switch_controller.models.GPIO")
+    def test_wait_for_edge_calls_GPIO_wait_for_edge_with_correct_params(self, GPIO_mock):
+        """Wait_for_edge should call the GPIO method with the correct params."""
+        self.switch.wait_for_edge(edge=GPIO_mock.HIGH, bouncetime=50, timeout=None)
+        GPIO_mock.wait_for_edge.assert_called_once_with(
+            self.switch.input_GPIO_pin,
+            GPIO_mock.HIGH,
+            bouncetime=50,
+            timeout=None,
+        )
+
+    @patch("switch_controller.models.GPIO")
+    def test_wait_for_edge_return(self, GPIO_mock):
+        """Translate the return into a Boolean indicating whether the switch was made."""
+        GPIO_mock.wait_for_edge.return_value = None
+        assert self.switch.wait_for_edge(edge=GPIO_mock.HIGH) is False
+
+        GPIO_mock.wait_for_edge.return_value = "Something"
+        assert self.switch.wait_for_edge(edge=GPIO_mock.HIGH) is True
+
+    def test_begin_edge_detection_initialises_if_not_already(self):
+        """Begin_edge_detection should initilaise the GPIO if it hasn't been done already."""
+        assert not self.switch.initialised
+        self.switch.begin_edge_detection(edge=GPIO.HIGH)
+        assert self.switch.initialised
+
+    @patch("switch_controller.models.GPIO")
+    def test_begin_edge_detection_calls_GPIO_add_event_detect_with_correct_params(self, GPIO_mock):
+        """Begin_edge_detection call the GPIO method with the correct params."""
+        self.switch.begin_edge_detection(edge=GPIO_mock.HIGH, bouncetime=50, callback=None)
+        GPIO_mock.add_event_detect.assert_called_once_with(
+            self.switch.input_GPIO_pin,
+            edge=GPIO_mock.HIGH,
+            bouncetime=50,
+            callback=None,
+        )
+
+    @patch("switch_controller.models.GPIO")
+    def test_edge_detected_calls_GPIO_method(self, GPIO_mock):
+        """Property should check for edge detection on the correct pin."""
+        self.switch.edge_detected
+        GPIO_mock.event_detected.assert_called_once_with(self.switch.input_GPIO_pin)
+
+    @patch("switch_controller.models.GPIO")
+    def test_remove_edge_detection_calls_GPIO_method(self, GPIO_mock):
+        """Property should remove edge detection on the correct pin."""
+        self.switch.remove_edge_detection()
+        GPIO_mock.remove_event_detect.assert_called_once_with(self.switch.input_GPIO_pin)
+
+    @patch("switch_controller.models.GPIO")
+    def test_kill_calls_GPIO_method(self, GPIO_mock):
+        """Property should call cleanup."""
+        self.switch.kill()
+        GPIO_mock.cleanup.assert_called_once()
