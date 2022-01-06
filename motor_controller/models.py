@@ -13,14 +13,14 @@ from RpiMotorLib.RpiMotorLib import A4988Nema
 
 # Project
 from common.constants import AVAILABLE_RPI_GPIO_PINS
+from common.exceptions import CommandError
+from common.exceptions import ConfigurationError
+from common.exceptions import ImplementationError
 from common.utils import check_for_GPIO_pin_use_in_this_and_other_models
 from common.utils import check_for_GPIO_pin_use_in_this_instance
 
 # Local
 from .constants import STEPPER_DRIVER_TYPES
-from common.exceptions import CommandError
-from common.exceptions import ConfigurationError
-from common.exceptions import ImplementationError
 
 
 class Motor(models.Model):
