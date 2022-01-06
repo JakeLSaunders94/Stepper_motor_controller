@@ -28,7 +28,7 @@ except ImportError:
     import Mock.GPIO as GPIO
 
 # Local
-from .utils import PushSwitchFactory
+from switch_controller.tests.utils import PushSwitchFactory
 
 
 class TestPushSwitch(TestCase):
