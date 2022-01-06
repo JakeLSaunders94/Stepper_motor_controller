@@ -9,11 +9,11 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 # Project
-from motor_controller.constants import AVAILABLE_RPI_GPIO_PINS
+from common.constants import AVAILABLE_RPI_GPIO_PINS
+from common.exceptions import CommandError
+from common.exceptions import ConfigurationError
+from common.exceptions import ImplementationError
 from motor_controller.constants import STEPPER_DRIVER_TYPES
-from motor_controller.exceptions import CommandError
-from motor_controller.exceptions import ConfigurationError
-from motor_controller.exceptions import ImplementationError
 from motor_controller.models import Motor
 from motor_controller.models import StepperMotor
 from motor_controller.tests.utils import StepperMotorFactory
@@ -127,7 +127,7 @@ class TestStepperMotor(TestCase):
             },
         )
 
-    @patch("motor_controller.models.GPIO_PIN_USING_MODELS", ["Something"])
+    @patch("common.utils.GPIO_PIN_USING_MODELS", ["Something"])
     def test_clean_raises_ImplementationError_if_GPIO_PIN_USING_MODELS_incorrect(self):
         """Clean should error if the models to check are defined incorrectly."""
         with self.assertRaises(ImplementationError) as e:

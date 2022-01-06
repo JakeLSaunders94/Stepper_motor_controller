@@ -5,7 +5,7 @@ import factory
 from factory.django import DjangoModelFactory
 
 # Project
-from motor_controller.constants import AVAILABLE_RPI_GPIO_PINS
+from common.constants import AVAILABLE_RPI_GPIO_PINS
 from motor_controller.constants import STEPPER_DRIVER_TYPES
 from motor_controller.models import StepperMotor
 

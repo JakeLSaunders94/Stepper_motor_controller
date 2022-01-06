@@ -15,6 +15,6 @@ class ConfigurationError(Exception):
 
 
 class CommandError(Exception):
-    """An incorrect command passed to the motor."""
+    """An incorrect command passed to the hardware."""
 
     pass

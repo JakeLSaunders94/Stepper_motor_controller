@@ -14,9 +14,9 @@ from django.test import TestCase
 from django.urls import reverse
 
 # Project
-from motor_controller.exceptions import CommandError
-from motor_controller.exceptions import ConfigurationError
-from motor_controller.exceptions import ImplementationError
+from common.exceptions import CommandError
+from common.exceptions import ConfigurationError
+from common.exceptions import ImplementationError
 from motor_controller.models import StepperMotor
 from motor_controller.tests.utils import StepperMotorFactory
 from motor_controller.views import move_stepper_motor_ajax_view
@@ -43,7 +43,11 @@ class TestMoveStepperMotorAJAXView(TestCase):
 
     def test_no_movement_type_gives_400_error(self):
         """If the specified movement type cannot be found, return 400 and error message."""
-        payload = {"motor_id": self.motor.id, "movement_type": "move_feet", "movement_amount": 123}
+        payload = {
+            "motor_id": self.motor.id,
+            "movement_type": "move_feet",
+            "movement_amount": 123,
+        }
         request = self.factory.post("/", data=json.dumps(payload), content_type="application/json")
 
         response = self.view(request, motor_id=self.motor.id)
@@ -60,7 +64,11 @@ class TestMoveStepperMotorAJAXView(TestCase):
         """The motors movement function should be called and the log returned as JSON."""
         mock_move_mm.return_value = "Called function successfully."
 
-        payload = {"motor_id": self.motor.id, "movement_type": "move_mm", "movement_amount": 123}
+        payload = {
+            "motor_id": self.motor.id,
+            "movement_type": "move_mm",
+            "movement_amount": 123,
+        }
         request = self.factory.post("/", data=json.dumps(payload), content_type="application/json")
 
         response = self.view(request, motor_id=self.motor.id)
@@ -71,7 +79,11 @@ class TestMoveStepperMotorAJAXView(TestCase):
     @patch("motor_controller.models.StepperMotor.move_mm")
     def test_command_error_and_configuration_error_return_error_as_json(self, mock_move_mm):
         """If a CommandError or ConfigurationError occur, send the error text back as JSON."""
-        payload = {"motor_id": self.motor.id, "movement_type": "move_mm", "movement_amount": 123}
+        payload = {
+            "motor_id": self.motor.id,
+            "movement_type": "move_mm",
+            "movement_amount": 123,
+        }
         for effect in [CommandError, ConfigurationError]:
             mock_move_mm.reset_mock()
             mock_move_mm.side_effect = effect("Error occurred!")
@@ -163,7 +175,11 @@ class TestStepperMotorModalAJAXView(TestCase):
         mock_property = StepperMotor.step_delay.setter(setter_mock)
         with patch.object(StepperMotor, "step_delay", mock_property):
             for effect in [CommandError, ImplementationError]:
-                payload = {"motor_id": self.motor.id, "property": "step_delay", "value": 123}
+                payload = {
+                    "motor_id": self.motor.id,
+                    "property": "step_delay",
+                    "value": 123,
+                }
                 setter_mock.reset_mock()
                 setter_mock.side_effect = effect("Error occurred!")
                 request = self.factory.post(
@@ -208,6 +224,10 @@ class TestStepperMotorBasicControlView(TestCase):
         """Test for correct context items."""
         response = self.client.get(reverse(self.view))
         self.assertQuerysetEqual(StepperMotor.objects.all(), response.context["stepper_motors"])
-        assert response.context["movement_types"] == ["move_mm", "move_steps", "move_rotations"]
+        assert response.context["movement_types"] == [
+            "move_mm",
+            "move_steps",
+            "move_rotations",
+        ]
 
         self.assertTemplateUsed("stepper_motor_basic_control_view.html")
