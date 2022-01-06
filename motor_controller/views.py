@@ -13,9 +13,9 @@ from django.views.decorators.http import require_POST
 from rest_framework import status
 
 # Project
-from motor_controller.exceptions import CommandError
-from motor_controller.exceptions import ConfigurationError
-from motor_controller.exceptions import ImplementationError
+from common.exceptions import CommandError
+from common.exceptions import ConfigurationError
+from common.exceptions import ImplementationError
 from motor_controller.models import StepperMotor
 
 

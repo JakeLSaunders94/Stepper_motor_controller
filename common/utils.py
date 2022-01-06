@@ -7,7 +7,7 @@ from django.db.models import Q
 
 # Project
 from common.constants import GPIO_PIN_USING_MODELS
-from motor_controller.exceptions import ImplementationError
+from common.exceptions import ImplementationError
 
 
 def check_for_GPIO_pin_use_in_this_instance(instance):

@@ -11,9 +11,9 @@ from django.test import TestCase
 # Project
 from common.constants import AVAILABLE_RPI_GPIO_PINS
 from motor_controller.constants import STEPPER_DRIVER_TYPES
-from motor_controller.exceptions import CommandError
-from motor_controller.exceptions import ConfigurationError
-from motor_controller.exceptions import ImplementationError
+from common.exceptions import CommandError
+from common.exceptions import ConfigurationError
+from common.exceptions import ImplementationError
 from motor_controller.models import Motor
 from motor_controller.models import StepperMotor
 from motor_controller.tests.utils import StepperMotorFactory

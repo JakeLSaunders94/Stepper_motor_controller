@@ -72,11 +72,9 @@ class PushSwitch(Switch):
     @property
     def is_pressed(self):
         """Detect if the switch is pressed."""
-        if not self.initialised:
-            self.initialise()
         if self.switch_type == "PTM":
             return self.is_made
-        else:
+        elif self.switch_type == "PTB":
             return not self.is_made
 
     def wait_for_edge(

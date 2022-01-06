@@ -18,9 +18,9 @@ from common.utils import check_for_GPIO_pin_use_in_this_instance
 
 # Local
 from .constants import STEPPER_DRIVER_TYPES
-from .exceptions import CommandError
-from .exceptions import ConfigurationError
-from .exceptions import ImplementationError
+from common.exceptions import CommandError
+from common.exceptions import ConfigurationError
+from common.exceptions import ImplementationError
 
 
 class Motor(models.Model):

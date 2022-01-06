@@ -14,9 +14,9 @@ from django.test import TestCase
 from django.urls import reverse
 
 # Project
-from motor_controller.exceptions import CommandError
-from motor_controller.exceptions import ConfigurationError
-from motor_controller.exceptions import ImplementationError
+from common.exceptions import CommandError
+from common.exceptions import ConfigurationError
+from common.exceptions import ImplementationError
 from motor_controller.models import StepperMotor
 from motor_controller.tests.utils import StepperMotorFactory
 from motor_controller.views import move_stepper_motor_ajax_view
