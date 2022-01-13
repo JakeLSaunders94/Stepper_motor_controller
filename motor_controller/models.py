@@ -3,6 +3,7 @@
 
 # Standard Library
 import logging
+from abc import ABC
 
 # Django
 from django.core.exceptions import ValidationError
@@ -16,6 +17,8 @@ from common.constants import AVAILABLE_RPI_GPIO_PINS
 from common.exceptions import CommandError
 from common.exceptions import ConfigurationError
 from common.exceptions import ImplementationError
+from common.models import Lockout as common_Lockout
+from common.models import PersistentDevice
 from common.utils import check_for_GPIO_pin_use_in_this_and_other_models
 from common.utils import check_for_GPIO_pin_use_in_this_instance
 
@@ -23,22 +26,14 @@ from common.utils import check_for_GPIO_pin_use_in_this_instance
 from .constants import STEPPER_DRIVER_TYPES
 
 
-class Motor(models.Model):
+class Lockout(models.Model, common_Lockout):
+    """Add the common lockout model to this app."""
+
+
+class Motor(models.Model, PersistentDevice):
     """A Generic class for all motors, subclassed by concrete motor type classes."""
 
-    name = models.CharField(max_length=200, verbose_name="Human Name")
     description = models.TextField(null=True, blank=True)
-
-    @property
-    def gpio_pin_fields(self):
-        """
-        Return the fields of this model that contain GPIO info.
-
-        This project is only designed to work with one RPi at a time, so pins can only
-        be used once.
-        Allows for checking of used GPIO pins across all motors.
-        """
-        raise NotImplementedError("This needs to be set by the concrete subclass.")
 
     def clean(self):
         """Generic model clean functions for all Motor objects."""  # noqa: D401
@@ -52,8 +47,6 @@ class StepperMotor(Motor):
 
     def __init__(self, *args, **kwargs):  # noqa: D107
         super().__init__(*args, **kwargs)
-        self._direction_of_rotation = True
-        self._steptype = "Full"
         self._verbose = False  # not sure what this is yet.
         if self.driver_type:
             self.controller_class = self.get_controller_class()
@@ -95,6 +88,8 @@ class StepperMotor(Motor):
     mm_per_revolution = models.FloatField(null=True, blank=True)
     _step_delay = models.FloatField(help_text="Delay between steps (seconds)", default=0.01)
     _init_delay = models.FloatField(help_text="Delay before first step (seconds)", default=0.01)
+    _direction_of_rotation = models.BooleanField(default=True)
+    _steptype = models.CharField(max_length=200, verbose_name="Full")
 
     @property
     def gpio_pin_fields(self):
@@ -216,9 +211,11 @@ class StepperMotor(Motor):
         """Setter for direction of rotation."""
         if direction == "clockwise":
             self._direction_of_rotation = True
+            self.save()
             return
         if direction == "anti-clockwise":
             self._direction_of_rotation = False
+            self.save()
             return
         raise ValueError(
             "That is not a valid option, please choose 'clockwise' or 'anti-clockwise'.",
@@ -239,6 +236,7 @@ class StepperMotor(Motor):
                 f"That is not a valid step type. Options are {valid_steptypes}",
             )
         self._steptype = steptype
+        self.save()
 
     @step_delay.setter
     def step_delay(self, delay):
